@@ -26,18 +26,16 @@ function AuthGuard() {
   const router = useRouter();
 
   useEffect(() => {
-    const inAuthGroup = segments[0] === '(auth)';
-    const allowedStudentRoutes = ['(tabs)', 'results', 'fees', 'exams', 'exam-results'];
-    const isStudentRoute = allowedStudentRoutes.includes(segments[0]);
-    const allowedFacultyRoutes = ['(faculty-tabs)', 'faculty-mark-attendance', 'faculty-exam-marks'];
-    const isFacultyRoute = allowedFacultyRoutes.includes(segments[0]);
+    const inAuthGroup = (segments[0] as string) === '(auth)';
+    const isStudentRoute = (segments[0] as string) === 'student';
+    const isFacultyRoute = (segments[0] as string) === 'faculty';
 
     if (!isLoggedIn && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isLoggedIn && role === 'STUDENT' && !isStudentRoute) {
-      router.replace('/(tabs)');
+      router.replace('/student' as any);
     } else if (isLoggedIn && role === 'FACULTY' && !isFacultyRoute) {
-      router.replace('/(faculty-tabs)' as any);
+      router.replace('/faculty' as any);
     }
   }, [isLoggedIn, role, segments]);
 
@@ -70,14 +68,8 @@ export default function RootLayout() {
           <StatusBar style="dark" />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(faculty-tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="results" options={{ headerShown: false }} />
-            <Stack.Screen name="fees" options={{ headerShown: false }} />
-            <Stack.Screen name="exams" options={{ headerShown: false }} />
-            <Stack.Screen name="exam-results" options={{ headerShown: false }} />
-            <Stack.Screen name="faculty-mark-attendance" options={{ headerShown: false }} />
-            <Stack.Screen name="faculty-exam-marks" options={{ headerShown: false }} />
+            <Stack.Screen name="student" options={{ headerShown: false }} />
+            <Stack.Screen name="faculty" options={{ headerShown: false }} />
           </Stack>
         </QueryClientProvider>
       </SafeAreaProvider>

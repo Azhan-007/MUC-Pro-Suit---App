@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Home, CheckCircle, Bell, User } from "lucide-react-native";
-import { Colors } from "../../src/theme";
+import { Colors } from "../../../src/theme";
 
 interface TabBarItemProps {
   label: string;

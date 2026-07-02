@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { GraduationCap, Lock, Badge, Eye, EyeOff } from 'lucide-react-native';
+import { Lock, Badge, Eye, EyeOff } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { LoginSchema, LoginInput } from '../../services/authService';
 import { mockProfile } from '../../data/mockData';
@@ -26,6 +26,7 @@ export const LoginScreen: React.FC = () => {
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(LoginSchema),
@@ -38,6 +39,19 @@ export const LoginScreen: React.FC = () => {
   const onSubmit = async (data: LoginInput) => {
     clearError();
     login(data.registerNumber, data.password, mockProfile);
+  };
+
+  const handleQuickLogin = (role: 'STUDENT' | 'FACULTY') => {
+    clearError();
+    if (role === 'STUDENT') {
+      setValue('registerNumber', 'MUC710');
+      setValue('password', 'password123');
+      login('MUC710', 'password123', mockProfile);
+    } else {
+      setValue('registerNumber', 'FAC001');
+      setValue('password', 'faculty123');
+      login('FAC001', 'faculty123', mockProfile);
+    }
   };
 
   return (
@@ -67,7 +81,7 @@ export const LoginScreen: React.FC = () => {
 
           {/* Credentials Card */}
           <CampusCard borderColor={Colors.AppOutline} style={styles.credentialsCard}>
-            {/* Register Number */}
+            {/* Username */}
             <Controller
               control={control}
               name="registerNumber"
@@ -134,8 +148,6 @@ export const LoginScreen: React.FC = () => {
               fullWidth
             />
 
-
-
             {/* Support link */}
             <View style={styles.supportRow}>
               <Text style={styles.supportText}>Need Help? </Text>
@@ -149,10 +161,22 @@ export const LoginScreen: React.FC = () => {
           <View style={styles.footer}>
             <View style={styles.footerLinks}>
               <Pressable><Text style={styles.footerLink}>Privacy Policy</Text></Pressable>
-              <Text style={styles.footerDot}> • </Text>
+              <Text style={styles.footerDot}> · </Text>
               <Pressable><Text style={styles.footerLink}>Terms of Service</Text></Pressable>
             </View>
-            <Text style={styles.version}>MUC Pro Suit v1.0</Text>
+            <Text style={styles.version}>MU Campus App v1.0</Text>
+
+            {__DEV__ && (
+              <View style={styles.devRow}>
+                <Pressable onPress={() => handleQuickLogin('STUDENT')} style={styles.devBtn}>
+                  <Text style={styles.devBtnText}>[Dev] Student Login</Text>
+                </Pressable>
+                <Text style={styles.devBtnDivider}>|</Text>
+                <Pressable onPress={() => handleQuickLogin('FACULTY')} style={styles.devBtn}>
+                  <Text style={styles.devBtnText}>[Dev] Faculty Login</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -212,7 +236,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.BluePrimary,
   },
-
   supportRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -236,5 +259,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.AppOnSurfaceVariant + '80',
     marginTop: 6,
+  },
+  devRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  devBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  devBtnText: {
+    fontSize: 11,
+    color: Colors.BluePrimary,
+    fontWeight: '600',
+  },
+  devBtnDivider: {
+    fontSize: 11,
+    color: Colors.AppOutline,
   },
 });

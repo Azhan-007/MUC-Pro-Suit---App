@@ -128,7 +128,7 @@ export const ExamsScreen: React.FC = () => {
         <View style={styles.resultsButtonContainer}>
           <CustomButton
             text={`View ${selectedExamType} Results`}
-            onPress={() => router.push(`/exam-results?type=${selectedExamType}`)}
+            onPress={() => router.push(`/student/exam-results?type=${selectedExamType}` as any)}
             leadingIcon={<GraduationCap size={20} color="#FFFFFF" />}
             backgroundColor={getHeaderColor(selectedExamType)}
             fullWidth

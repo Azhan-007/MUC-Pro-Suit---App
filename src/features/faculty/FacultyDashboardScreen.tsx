@@ -157,7 +157,7 @@ export const FacultyDashboardScreen: React.FC = () => {
         >
           <Pressable
             style={styles.headerLeft}
-            onPress={() => router.push('/(faculty-tabs)/profile')}
+            onPress={() => router.push('/faculty/profile' as any)}
           >
             <View style={styles.avatarCircle}>
               <Text style={styles.avatarText}>{initial}</Text>
@@ -170,7 +170,7 @@ export const FacultyDashboardScreen: React.FC = () => {
           </Pressable>
           <Pressable
             style={styles.bellBtn}
-            onPress={() => router.push('/(faculty-tabs)/alerts')}
+            onPress={() => router.push('/faculty/alerts' as any)}
           >
             <Bell size={22} color={Colors.AppOnBackground} />
           </Pressable>
@@ -216,10 +216,10 @@ export const FacultyDashboardScreen: React.FC = () => {
         <SectionHeader title="Quick Access" />
         <View style={styles.quickGrid}>
           <View style={styles.quickRow}>
-            <QuickActionButton title="Attendance" icon={<CheckCircle size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/(faculty-tabs)/classes')} />
-            <QuickActionButton title="Timetable" icon={<Calendar size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/(faculty-tabs)/schedule')} />
-            <QuickActionButton title="Enter Marks" icon={<ClipboardList size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty-exam-marks')} />
-            <QuickActionButton title="Circulars" icon={<Bell size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/(faculty-tabs)/alerts')} />
+            <QuickActionButton title="Attendance" icon={<CheckCircle size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty/classes' as any)} />
+            <QuickActionButton title="Timetable" icon={<Calendar size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty/schedule' as any)} />
+            <QuickActionButton title="Enter Marks" icon={<ClipboardList size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty/exam-marks' as any)} />
+            <QuickActionButton title="Circulars" icon={<Bell size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty/alerts' as any)} />
           </View>
         </View>
 
@@ -227,7 +227,7 @@ export const FacultyDashboardScreen: React.FC = () => {
         <SectionHeader
           title="Today's Classes"
           actionText="View Schedule"
-          onActionPress={() => router.push('/(faculty-tabs)/schedule')}
+          onActionPress={() => router.push('/faculty/schedule' as any)}
         />
         {/* Ongoing class */}
         {ongoingClass && (
@@ -293,7 +293,7 @@ export const FacultyDashboardScreen: React.FC = () => {
         <SectionHeader
           title="Circulars"
           actionText="View All"
-          onActionPress={() => router.push('/(faculty-tabs)/alerts')}
+          onActionPress={() => router.push('/faculty/alerts' as any)}
         />
 
         <CampusCard style={styles.announcementsContainerCard} elevation="sm">
@@ -303,7 +303,7 @@ export const FacultyDashboardScreen: React.FC = () => {
             return (
               <View key={item.id}>
                 <Pressable
-                  onPress={() => router.push('/(faculty-tabs)/alerts')}
+                  onPress={() => router.push('/faculty/alerts' as any)}
                   style={({ pressed }) => [
                     styles.announcementFeedItem,
                     pressed && { backgroundColor: '#F1F5F9' },
