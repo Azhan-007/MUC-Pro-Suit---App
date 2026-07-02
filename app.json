@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "MU Campus",
-    "slug": "mu-campus-rn",
+    "name": "MUC Pro Suit",
+    "slug": "muc-pro-suit",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "mu-campus",
+    "scheme": "muc-pro-suit",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mucampus.app"
+      "bundleIdentifier": "com.mucprosuit.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.mucampus.app"
+      "package": "com.mucprosuit.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",

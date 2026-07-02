@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -99,7 +99,7 @@ export const FacultyProfileScreen: React.FC = () => {
       case 'ABOUT':
         return (
           <View style={styles.modalItemsList}>
-            <ModalRow label="App Name" value="MU Campus Mobile" />
+            <ModalRow label="App Name" value="MUC Pro Suit" />
             <ModalRow label="Version" value="1.0" />
             <ModalRow label="Build" value="102" />
             <ModalRow label="Powered by" value="Aziron Tech Private Ltd" />

@@ -152,7 +152,7 @@ export const LoginScreen: React.FC = () => {
               <Text style={styles.footerDot}> • </Text>
               <Pressable><Text style={styles.footerLink}>Terms of Service</Text></Pressable>
             </View>
-            <Text style={styles.version}>MU Campus App v1.0</Text>
+            <Text style={styles.version}>MUC Pro Suit v1.0</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

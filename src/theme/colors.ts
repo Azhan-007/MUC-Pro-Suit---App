@@ -1,4 +1,4 @@
-// MU Campus Color System — ported from Color.kt
+// MUC Pro Suit Color System — ported from Color.kt
 // DO NOT modify hex values without updating the Android source too.
 
 export const Colors = {
