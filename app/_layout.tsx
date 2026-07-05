@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
+import { useEffect, useState, useCallback } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,7 +18,7 @@ import { useAuthStore } from '../src/store/authStore';
 
 import { CampusAlertProvider } from '../src/components';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient();
 
@@ -26,29 +26,40 @@ function AuthGuard() {
   const { isLoggedIn, role } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
-  const navigationState = useRootNavigationState();
+  const [isReady, setIsReady] = useState(false);
+
+  // Wait a tick after mount so the navigation container is fully initialized
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    if (!navigationState?.key) return;
+    if (!isReady) return;
 
-    const inAuthGroup = (segments[0] as string) === '(auth)';
-    const isStudentRoute = (segments[0] as string) === 'student';
-    const isFacultyRoute = (segments[0] as string) === 'faculty';
+    try {
+      const inAuthGroup = (segments[0] as string) === '(auth)';
+      const isStudentRoute = (segments[0] as string) === 'student';
+      const isFacultyRoute = (segments[0] as string) === 'faculty';
 
-    if (!isLoggedIn && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (isLoggedIn && role === 'STUDENT' && !isStudentRoute) {
-      router.replace('/student' as any);
-    } else if (isLoggedIn && role === 'FACULTY' && !isFacultyRoute) {
-      router.replace('/faculty' as any);
+      if (!isLoggedIn && !inAuthGroup) {
+        router.replace('/(auth)/login');
+      } else if (isLoggedIn && role === 'STUDENT' && !isStudentRoute) {
+        router.replace('/student' as any);
+      } else if (isLoggedIn && role === 'FACULTY' && !isFacultyRoute) {
+        router.replace('/faculty' as any);
+      }
+    } catch (e) {
+      // Silently handle navigation errors during initialization
+      console.warn('AuthGuard navigation error:', e);
     }
-  }, [isLoggedIn, role, segments, navigationState]);
+  }, [isLoggedIn, role, segments, isReady]);
 
   return null;
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -57,23 +68,31 @@ export default function RootLayout() {
     Inter_900Black,
   });
 
+  const onLayoutReady = useCallback(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontError]);
+
+  // Safety timeout: always hide splash after 3 seconds no matter what
   useEffect(() => {
     const timer = setTimeout(() => {
       SplashScreen.hideAsync().catch(() => {});
-    }, 3500);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
-    if (fontsLoaded) {
-      clearTimeout(timer);
+  // Hide splash as soon as fonts load (or fail)
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync().catch(() => {});
     }
+  }, [fontsLoaded, fontError]);
 
-    return () => clearTimeout(timer);
-  }, [fontsLoaded]);
-
-  if (!fontsLoaded) return null;
-
+  // Don't block rendering - render the app even without fonts
+  // (system fonts will be used as fallback until custom fonts load)
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutReady}>
       <SafeAreaProvider>
         <CampusAlertProvider>
           <QueryClientProvider client={queryClient}>
