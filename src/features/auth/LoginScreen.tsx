@@ -41,18 +41,6 @@ export const LoginScreen: React.FC = () => {
     login(data.registerNumber, data.password, mockProfile);
   };
 
-  const handleQuickLogin = (role: 'STUDENT' | 'FACULTY') => {
-    clearError();
-    if (role === 'STUDENT') {
-      setValue('registerNumber', 'MUC710');
-      setValue('password', 'password123');
-      login('MUC710', 'password123', mockProfile);
-    } else {
-      setValue('registerNumber', 'FAC001');
-      setValue('password', 'faculty123');
-      login('FAC001', 'faculty123', mockProfile);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -164,19 +152,7 @@ export const LoginScreen: React.FC = () => {
               <Text style={styles.footerDot}> · </Text>
               <Pressable><Text style={styles.footerLink}>Terms of Service</Text></Pressable>
             </View>
-            <Text style={styles.version}>MU Campus App v1.0</Text>
-
-            {__DEV__ && (
-              <View style={styles.devRow}>
-                <Pressable onPress={() => handleQuickLogin('STUDENT')} style={styles.devBtn}>
-                  <Text style={styles.devBtnText}>[Dev] Student Login</Text>
-                </Pressable>
-                <Text style={styles.devBtnDivider}>|</Text>
-                <Pressable onPress={() => handleQuickLogin('FACULTY')} style={styles.devBtn}>
-                  <Text style={styles.devBtnText}>[Dev] Faculty Login</Text>
-                </Pressable>
-              </View>
-            )}
+            <Text style={styles.version}>MUC Pro Suit v1.0</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

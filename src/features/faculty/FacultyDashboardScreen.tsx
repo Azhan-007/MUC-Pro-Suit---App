@@ -8,6 +8,7 @@ import {
   Dimensions,
   Platform,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +28,12 @@ import {
   Briefcase,
   Megaphone,
   Award,
+  Plus,
+  Grid3X3,
+  Users,
+  FileText,
+  X,
+  Check,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useCampusStore } from '../../store/campusStore';
@@ -60,14 +67,95 @@ const parseCircularDate = (dateStr: string): number => {
   return new Date(Number(year), m, Number(day)).getTime();
 };
 
+const getClassStatusRealtime = (timeStr: string): 'COMPLETED' | 'ONGOING' | 'UPCOMING' => {
+  const normalized = timeStr.replace(/\s+/g, '').replace(/[\n\-–]/g, '-');
+  const parts = normalized.split('-');
+  if (parts.length < 2) return 'UPCOMING';
+
+  const [startStr, endStr] = parts;
+  const parseToMinutes = (str: string) => {
+    let [h, m] = str.split(':').map(Number);
+    if (h >= 1 && h <= 4) h += 12; // Adjust afternoon classes
+    return h * 60 + m;
+  };
+
+  const startMin = parseToMinutes(startStr);
+  const endMin = parseToMinutes(endStr);
+  const currentMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+  if (currentMin >= endMin) return 'COMPLETED';
+  if (currentMin >= startMin && currentMin < endMin) return 'ONGOING';
+  return 'UPCOMING';
+};
+
+const SHORTCUT_METADATA: Record<string, {
+  title: string;
+  iconName: string;
+  route: string;
+  bg: string;
+}> = {
+  Attendance: { title: 'Attendance', iconName: 'CheckCircle', route: '/faculty/classes', bg: Colors.BluePrimaryContainer },
+  Timetable: { title: 'Timetable', iconName: 'Calendar', route: '/faculty/schedule', bg: Colors.BluePrimaryContainer },
+  'Enter Marks': { title: 'Enter Marks', iconName: 'ClipboardList', route: '/faculty/exam-marks', bg: Colors.BluePrimaryContainer },
+  Circulars: { title: 'Circulars', iconName: 'Bell', route: '/faculty/alerts', bg: Colors.BluePrimaryContainer },
+  'Academic Hub': { title: 'Academic Hub', iconName: 'BookOpen', route: '/faculty/academic-hub', bg: Colors.BluePrimaryContainer },
+  Assessments: { title: 'Assessments', iconName: 'FileText', route: '/faculty/assessments', bg: Colors.BluePrimaryContainer },
+  'Student Hub': { title: 'Student Hub', iconName: 'Users', route: '/faculty/student-hub?tab=STUDENTS', bg: Colors.BluePrimaryContainer },
+  'Mentor Panel': { title: 'Mentor Panel', iconName: 'User', route: '/faculty/student-hub?tab=MENTOR', bg: Colors.BluePrimaryContainer },
+  'Batch Timetable': { title: 'Batch Timetable', iconName: 'ClipboardList', route: '/faculty/batch-timetable', bg: Colors.BluePrimaryContainer },
+  'Dept Timetable': { title: 'Dept Timetable', iconName: 'ClipboardList', route: '/faculty/dept-timetable', bg: Colors.BluePrimaryContainer },
+};
+
+const renderShortcutIcon = (name: string, size = 26, color = Colors.BluePrimary) => {
+  switch (name) {
+    case 'CheckCircle': return <CheckCircle size={size} color={color} />;
+    case 'Calendar': return <Calendar size={size} color={color} />;
+    case 'ClipboardList': return <ClipboardList size={size} color={color} />;
+    case 'Bell': return <Bell size={size} color={color} />;
+    case 'BookOpen': return <BookOpen size={size} color={color} />;
+    case 'FileText': return <FileText size={size} color={color} />;
+    case 'Users': return <Users size={size} color={color} />;
+    case 'User': return <User size={size} color={color} />;
+    case 'Plus': return <Plus size={size} color={color} />;
+    default: return <Grid3X3 size={size} color={color} />;
+  }
+};
+
 export const FacultyDashboardScreen: React.FC = () => {
   const router = useRouter();
-  const [scrolled, setScrolled] = React.useState(false);
 
   const insets = useSafeAreaInsets();
   const statusBarHeight = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : (insets.top || 44);
   const faculty = useAuthStore((s) => s.faculty);
-  const { announcements } = useCampusStore();
+  const { announcements, facultyQuickAccessShortcuts, setFacultyQuickAccessShortcuts } = useCampusStore();
+  const [isCustomizingShortcuts, setIsCustomizingShortcuts] = React.useState(false);
+  const [tempShortcuts, setTempShortcuts] = React.useState<string[]>([]);
+
+  const handleOpenCustomizer = () => {
+    setTempShortcuts(facultyQuickAccessShortcuts);
+    setIsCustomizingShortcuts(true);
+  };
+
+  const toggleTempShortcut = (key: string) => {
+    if (tempShortcuts.includes(key)) {
+      setTempShortcuts(tempShortcuts.filter((s) => s !== key));
+    } else {
+      setTempShortcuts([...tempShortcuts, key]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    setTempShortcuts(Object.keys(SHORTCUT_METADATA));
+  };
+
+  const handleResetDefault = () => {
+    setTempShortcuts(['Attendance', 'Timetable', 'Enter Marks', 'Circulars', 'Academic Hub', 'Assessments']);
+  };
+
+  const handleSaveShortcuts = () => {
+    setFacultyQuickAccessShortcuts(tempShortcuts);
+    setIsCustomizingShortcuts(false);
+  };
 
   if (!faculty) return null;
 
@@ -75,6 +163,14 @@ export const FacultyDashboardScreen: React.FC = () => {
 
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [currentMinute, setCurrentMinute] = React.useState(new Date().getMinutes());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentMinute(new Date().getMinutes());
+    }, 30000); // Sync every 30 seconds
+    return () => clearInterval(timer);
+  }, []);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -90,10 +186,18 @@ export const FacultyDashboardScreen: React.FC = () => {
 
   const todayDayOrder = getDayOrder(currentDate);
   const mappedDay = DAY_ORDER_MAP[todayDayOrder] || 'Mon';
-  const todayClasses = isWeekendDay ? [] : (mockFacultyTimetable[mappedDay] || []);
+  
+  const todayClasses = React.useMemo(() => {
+    // If it's a weekend, fall back to Wednesday (just like student dashboard) so there's active data visible
+    const rawClasses = isWeekendDay ? (mockFacultyTimetable['Wed'] || []) : (mockFacultyTimetable[mappedDay] || []);
+    return rawClasses.map((cls) => ({
+      ...cls,
+      status: getClassStatusRealtime(cls.time),
+    }));
+  }, [isWeekendDay, mappedDay, currentMinute]);
 
-  const ongoingClass = todayClasses.find((cls) => cls.status === 'ONGOING');
-  const upcomingClasses = todayClasses.filter((cls) => cls.status === 'UPCOMING');
+  const ongoingClass = React.useMemo(() => todayClasses.find((cls) => cls.status === 'ONGOING'), [todayClasses]);
+  const upcomingClasses = React.useMemo(() => todayClasses.filter((cls) => cls.status === 'UPCOMING'), [todayClasses]);
 
 
 
@@ -134,57 +238,14 @@ export const FacultyDashboardScreen: React.FC = () => {
 
   return (
     <View style={styles.safeArea}>
-      {/* ── 1. Top Header ── */}
+      {/* ── 1. Static Floating Header Card ── */}
       <View
         style={[
-          styles.fixedHeaderContainer,
-          scrolled
-            ? {
-              top: 0,
-              left: 0,
-              right: 0,
-              paddingTop: statusBarHeight + 12,
-              paddingBottom: 12,
-              paddingHorizontal: 16,
-              backgroundColor: '#FFFFFF',
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.AppOutline,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              elevation: 4,
-            }
-            : {
-              top: statusBarHeight + 12,
-              left: 16,
-              right: 16,
-              backgroundColor: 'transparent',
-            },
+          styles.headerContainer,
+          { paddingTop: statusBarHeight + 12 },
         ]}
       >
-        <View
-          style={
-            scrolled
-              ? styles.header
-              : [
-                styles.header,
-                {
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: Colors.AppOutline,
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 3,
-                  elevation: 2,
-                },
-              ]
-          }
-        >
+        <View style={styles.headerCard}>
           <Pressable
             style={styles.headerLeft}
             onPress={() => router.push('/faculty/profile' as any)}
@@ -216,20 +277,8 @@ export const FacultyDashboardScreen: React.FC = () => {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: statusBarHeight + 112 },
-        ]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={(e) => {
-          const offsetY = e.nativeEvent.contentOffset.y;
-          if (offsetY > 10) {
-            setScrolled(true);
-          } else {
-            setScrolled(false);
-          }
-        }}
       >
         {/* ── 2. Library Banner Card ── */}
         <View style={{ marginBottom: 16 }}>
@@ -250,13 +299,37 @@ export const FacultyDashboardScreen: React.FC = () => {
 
 
         {/* ── 4. Quick Access Grid ── */}
-        <SectionHeader title="Quick Access" />
+        <SectionHeader 
+          title="Quick Access" 
+          actionText="Edit"
+          onActionPress={handleOpenCustomizer}
+        />
         <View style={styles.quickGrid}>
-          <View style={styles.quickRow}>
-            <QuickActionButton title="Attendance" icon={<CheckCircle size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty/classes' as any)} />
-            <QuickActionButton title="Timetable" icon={<Calendar size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty/schedule' as any)} />
-            <QuickActionButton title="Enter Marks" icon={<ClipboardList size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty/exam-marks' as any)} />
-            <QuickActionButton title="Circulars" icon={<Bell size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/faculty/alerts' as any)} />
+          <View style={styles.quickWrap}>
+            {facultyQuickAccessShortcuts.map((key) => {
+              const meta = SHORTCUT_METADATA[key];
+              if (!meta) return null;
+              return (
+                <View key={key} style={styles.quickActionWrapper}>
+                  <QuickActionButton
+                    title={meta.title}
+                    icon={renderShortcutIcon(meta.iconName)}
+                    iconBg={meta.bg}
+                    onPress={() => router.push(meta.route as any)}
+                  />
+                </View>
+              );
+            })}
+            
+            {/* Trailing Add More Button */}
+            <View style={styles.quickActionWrapper}>
+              <QuickActionButton
+                title="Add More"
+                icon={renderShortcutIcon('Plus', 26, Colors.BluePrimary)}
+                iconBg="#F1F5F9"
+                onPress={handleOpenCustomizer}
+              />
+            </View>
           </View>
         </View>
 
@@ -402,6 +475,77 @@ export const FacultyDashboardScreen: React.FC = () => {
 
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* ── SHORTCUT CUSTOMIZER MODAL ── */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isCustomizingShortcuts}
+        onRequestClose={() => setIsCustomizingShortcuts(false)}
+      >
+        <View style={styles.portalOverlay}>
+          <View style={styles.customizerContent}>
+            <View style={styles.customizerHeader}>
+              <Text style={styles.customizerTitle}>Customize Shortcuts</Text>
+              <Text style={styles.customizerSubtitle}>Choose modules to display on your Home Screen</Text>
+            </View>
+
+            <View style={styles.quickActionsControlRow}>
+              <Pressable style={styles.controlLinkBtn} onPress={handleSelectAll}>
+                <Text style={styles.controlLinkText}>Select All</Text>
+              </Pressable>
+              <View style={styles.controlDivider} />
+              <Pressable style={styles.controlLinkBtn} onPress={handleResetDefault}>
+                <Text style={styles.controlLinkText}>Reset to Default</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.checklistScroll} showsVerticalScrollIndicator={false}>
+              {Object.keys(SHORTCUT_METADATA).map((key) => {
+                const meta = SHORTCUT_METADATA[key];
+                const checked = tempShortcuts.includes(key);
+                return (
+                  <Pressable
+                    key={key}
+                    style={styles.checkItemRow}
+                    onPress={() => toggleTempShortcut(key)}
+                  >
+                    <View style={styles.checkItemLeft}>
+                      <View style={[styles.miniIconBg, { backgroundColor: meta.bg }]}>
+                        {renderShortcutIcon(meta.iconName, 18, Colors.BluePrimary)}
+                      </View>
+                      <Text style={styles.checkItemLabel}>{meta.title}</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.checkboxCircle,
+                        checked ? styles.checkboxCircleChecked : styles.checkboxCircleUnchecked,
+                      ]}
+                    >
+                      {checked && <Check size={12} color="#FFFFFF" />}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.customizerFooter}>
+              <Pressable
+                style={[styles.customizerBtn, styles.customizerBtnCancel]}
+                onPress={() => setIsCustomizingShortcuts(false)}
+              >
+                <Text style={styles.customizerBtnCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.customizerBtn, styles.customizerBtnSave]}
+                onPress={handleSaveShortcuts}
+              >
+                <Text style={styles.customizerBtnSaveText}>Save Changes</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -409,12 +553,29 @@ export const FacultyDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.AppBackground },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 16 },
-  fixedHeaderContainer: {
-    position: 'absolute',
+  content: { paddingHorizontal: 16, paddingTop: 16 },
+  headerContainer: {
+    backgroundColor: Colors.AppBackground,
+    paddingBottom: 6,
+    paddingHorizontal: 16,
     zIndex: 10,
   },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.AppOutline,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.BluePrimaryContainer, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 20, fontWeight: '700', color: Colors.BluePrimary },
@@ -478,6 +639,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 0.3,
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  bannerSubtitle: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginHorizontal: 12,
   },
   bannerDots: {
     flexDirection: 'row',
@@ -498,8 +667,9 @@ const styles = StyleSheet.create({
   dotInactive: {
     backgroundColor: 'rgba(0,0,0,0.15)',
   },
-  quickGrid: { gap: 8, marginBottom: 8 },
-  quickRow: { flexDirection: 'row' },
+  quickGrid: { gap: 8, marginBottom: 16 },
+  quickWrap: { flexDirection: 'row', flexWrap: 'wrap', width: '100%' },
+  quickActionWrapper: { width: '25%', alignItems: 'center', marginBottom: 16 },
   classRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   classLeft: { flex: 1 },
   classSubject: { fontSize: 22, fontWeight: '700', marginTop: 8 },
@@ -607,5 +777,140 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '900',
+  },
+  
+  // Customizer styles
+  portalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  customizerContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  customizerHeader: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  customizerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  customizerSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  quickActionsControlRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  controlLinkBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  controlLinkText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.BluePrimary,
+  },
+  controlDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: Colors.AppOutline,
+  },
+  checklistScroll: {
+    maxHeight: 320,
+    marginBottom: 16,
+  },
+  checkItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.AppOutline,
+  },
+  checkItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  miniIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkItemLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  checkboxCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxCircleChecked: {
+    backgroundColor: Colors.BluePrimary,
+    borderColor: Colors.BluePrimary,
+  },
+  checkboxCircleUnchecked: {
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+  },
+  customizerFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  customizerBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customizerBtnCancel: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+  },
+  customizerBtnCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  customizerBtnSave: {
+    backgroundColor: Colors.BluePrimary,
+  },
+  customizerBtnSaveText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

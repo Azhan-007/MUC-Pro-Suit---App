@@ -38,6 +38,17 @@ import {
 import { AnnouncementCategory, CircularItem } from '../../types';
 import { mockFacultyCirculars } from '../../data/mockFacultyData';
 
+const renderAlertIcon = (iconName?: string, size = 30, color: string = Colors.BluePrimary) => {
+  switch (iconName) {
+    case 'Star': return <Star size={size} color={color} fill={color} />;
+    case 'Archive': return <Archive size={size} color={color} />;
+    case 'BadgeCheck': return <BadgeCheck size={size} color="#10B981" />;
+    case 'Eye': return <Eye size={size} color={color} />;
+    case 'Share2': return <Share2 size={size} color={color} />;
+    default: return <BadgeCheck size={size} color="#10B981" />;
+  }
+};
+
 const CATEGORIES = [
   'All', 'Academic', 'Exams', 'Placement', 'Library', 'Administration', 
   'Events', 'HR', 'Finance', 'Scholarships', 'Research', 'Training', 'IQAC', 'NAAC', 'General'
@@ -99,6 +110,20 @@ export const AnnouncementsScreen: React.FC = () => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
+  // Custom Alert States
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'SUCCESS' | 'INFO';
+    iconName?: 'Star' | 'Archive' | 'BadgeCheck' | 'Eye' | 'Share2';
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'INFO',
+  });
+
   // ── Date Utility Helpers (Mohathashim) ──
   const parseDateString = (str: string): Date | null => {
     if (!str) return null;
@@ -150,10 +175,13 @@ export const AnnouncementsScreen: React.FC = () => {
     setCirculars(prev => prev.map(c => {
       if (c.id === id) {
         const nextState = !c.isBookmarked;
-        Alert.alert(
-          nextState ? 'Circular Bookmarked' : 'Circular Removed',
-          nextState ? 'This circular will now appear in your bookmarks tab.' : 'Removed from bookmarks.'
-        );
+        setAlertConfig({
+          visible: true,
+          title: nextState ? 'Circular Bookmarked' : 'Circular Removed',
+          message: nextState ? 'This circular will now appear in your bookmarks tab.' : 'Removed from bookmarks.',
+          type: 'SUCCESS',
+          iconName: 'Star',
+        });
         return { ...c, isBookmarked: nextState };
       }
       return c;
@@ -168,10 +196,13 @@ export const AnnouncementsScreen: React.FC = () => {
     setCirculars(prev => prev.map(c => {
       if (c.id === id) {
         const nextState = !c.isArchived;
-        Alert.alert(
-          nextState ? 'Circular Archived' : 'Circular Restored',
-          nextState ? 'Moved to archives.' : 'Restored back to inbox.'
-        );
+        setAlertConfig({
+          visible: true,
+          title: nextState ? 'Circular Archived' : 'Circular Restored',
+          message: nextState ? 'Moved to archives.' : 'Restored back to inbox.',
+          type: 'SUCCESS',
+          iconName: 'Archive',
+        });
         return { ...c, isArchived: nextState };
       }
       return c;
@@ -184,11 +215,23 @@ export const AnnouncementsScreen: React.FC = () => {
 
   const handleMarkAllRead = () => {
     setCirculars(prev => prev.map(c => ({ ...c, isRead: true })));
-    Alert.alert('Success', 'All circulars have been marked as read.');
+    setAlertConfig({
+      visible: true,
+      title: 'Success',
+      message: 'All circulars have been marked as read.',
+      type: 'SUCCESS',
+      iconName: 'BadgeCheck',
+    });
   };
 
   const handleAttachmentPreview = (fileName: string) => {
-    Alert.alert('Attachment Preview', `Opening document preview for: ${fileName}`);
+    setAlertConfig({
+      visible: true,
+      title: 'Attachment Preview',
+      message: `Opening document preview for: ${fileName}`,
+      type: 'INFO',
+      iconName: 'Eye',
+    });
   };
 
   const handleAttachmentDownload = (fileName: string) => {
@@ -201,11 +244,23 @@ export const AnnouncementsScreen: React.FC = () => {
   };
 
   const handleAttachmentShare = (fileName: string) => {
-    Alert.alert('Share File', `Sharing link generated for attachment file: ${fileName}`);
+    setAlertConfig({
+      visible: true,
+      title: 'Share File',
+      message: `Sharing link generated for attachment file: ${fileName}`,
+      type: 'INFO',
+      iconName: 'Share2',
+    });
   };
 
   const handleShareCircular = (title: string) => {
-    Alert.alert('Share Circular', `Circular Link generated for: "${title}". Copied to clipboard.`);
+    setAlertConfig({
+      visible: true,
+      title: 'Share Circular',
+      message: `Circular Link generated for: "${title}". Copied to clipboard.`,
+      type: 'INFO',
+      iconName: 'Share2',
+    });
   };
 
   // ── Search, Filter, Sort Memos (Mohathashim) ──
@@ -752,6 +807,38 @@ export const AnnouncementsScreen: React.FC = () => {
         <View style={{ height: 24 }} />
       </ScrollView>
 
+      {/* ── CUSTOM ALERT MODAL ── */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={alertConfig.visible}
+        onRequestClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      >
+        <View style={styles.portalOverlay}>
+          <View style={styles.portalContentOverlay}>
+            <View
+              style={[
+                styles.modalIconBox,
+                {
+                  backgroundColor:
+                    alertConfig.type === 'SUCCESS' ? '#E6FBF3' : '#EFF6FF',
+                },
+              ]}
+            >
+              {renderAlertIcon(alertConfig.iconName, 30, alertConfig.type === 'SUCCESS' ? '#10B981' : Colors.BluePrimary)}
+            </View>
+            <Text style={styles.portalTitle}>{alertConfig.title}</Text>
+            <Text style={styles.portalMessage}>{alertConfig.message}</Text>
+            <Pressable
+              style={[styles.portalBtn, styles.portalBtnPrimary, { width: '100%' }]}
+              onPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+            >
+              <Text style={styles.portalBtnTextPrimary}>OK</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       {/* ── DETAIL MODAL FOR CIRCULARS ── */}
       <Modal
         animationType="slide"
@@ -862,6 +949,38 @@ export const AnnouncementsScreen: React.FC = () => {
                 </Pressable>
               </View>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── CUSTOM ALERT MODAL ── */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={alertConfig.visible}
+        onRequestClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      >
+        <View style={styles.portalOverlay}>
+          <View style={styles.portalContentOverlay}>
+            <View
+              style={[
+                styles.modalIconBox,
+                {
+                  backgroundColor:
+                    alertConfig.type === 'SUCCESS' ? '#E6FBF3' : '#EFF6FF',
+                },
+              ]}
+            >
+              {renderAlertIcon(alertConfig.iconName, 30, alertConfig.type === 'SUCCESS' ? '#10B981' : Colors.BluePrimary)}
+            </View>
+            <Text style={styles.portalTitle}>{alertConfig.title}</Text>
+            <Text style={styles.portalMessage}>{alertConfig.message}</Text>
+            <Pressable
+              style={[styles.portalBtn, styles.portalBtnPrimary, { width: '100%' }]}
+              onPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+            >
+              <Text style={styles.portalBtnTextPrimary}>OK</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -1263,5 +1382,20 @@ const styles = StyleSheet.create({
     color: Colors.AppOnSurfaceVariant,
     textAlign: 'center',
     marginVertical: 8,
+  },
+  portalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  portalMessage: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+    fontWeight: '500',
   },
 });

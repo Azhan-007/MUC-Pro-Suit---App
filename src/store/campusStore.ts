@@ -52,6 +52,7 @@ interface CampusState {
 
   // Quick Access Shortcuts customization
   quickAccessShortcuts: string[];
+  facultyQuickAccessShortcuts: string[];
 
   // Actions
   setSelectedDay: (day: string) => void;
@@ -59,6 +60,7 @@ interface CampusState {
   payOutstandingFees: (method: string) => void;
   setNotificationCount: (count: number) => void;
   setQuickAccessShortcuts: (shortcuts: string[]) => void;
+  setFacultyQuickAccessShortcuts: (shortcuts: string[]) => void;
 }
 
 export const useCampusStore = create<CampusState>((set) => ({
@@ -67,6 +69,7 @@ export const useCampusStore = create<CampusState>((set) => ({
   selectedSemester: 'Semester 4',
   notificationCount: 2,
   quickAccessShortcuts: ['Attendance', 'Timetable', 'Performance', 'Fees', 'Assignments', 'Library'],
+  facultyQuickAccessShortcuts: ['Attendance', 'Timetable', 'Enter Marks', 'Circulars', 'Academic Hub', 'Assessments'],
 
   attendanceOverview: mockAttendanceOverview,
   dailyAttendance: mockDailyAttendance,
@@ -128,4 +131,7 @@ export const useCampusStore = create<CampusState>((set) => ({
 
   setQuickAccessShortcuts: (shortcuts) =>
     set({ quickAccessShortcuts: shortcuts }),
+
+  setFacultyQuickAccessShortcuts: (shortcuts) =>
+    set({ facultyQuickAccessShortcuts: shortcuts }),
 }));
