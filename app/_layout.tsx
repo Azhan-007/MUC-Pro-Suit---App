@@ -16,6 +16,8 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../src/store/authStore';
 
+import { CampusAlertProvider } from '../src/components';
+
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
@@ -63,15 +65,17 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <AuthGuard />
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="student" options={{ headerShown: false }} />
-            <Stack.Screen name="faculty" options={{ headerShown: false }} />
-          </Stack>
-        </QueryClientProvider>
+        <CampusAlertProvider>
+          <QueryClientProvider client={queryClient}>
+            <AuthGuard />
+            <StatusBar style="dark" />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="student" options={{ headerShown: false }} />
+              <Stack.Screen name="faculty" options={{ headerShown: false }} />
+            </Stack>
+          </QueryClientProvider>
+        </CampusAlertProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

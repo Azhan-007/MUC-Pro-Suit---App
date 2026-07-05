@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Home, CheckCircle, Bell, User } from "lucide-react-native";
+import { Home, CheckCircle, Bell, User, Menu } from "lucide-react-native";
 import { Colors } from "../../../src/theme";
 
 interface TabBarItemProps {
@@ -40,14 +40,14 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const TAB_MAP: Record<string, { label: string; icon: (focused: boolean) => React.ReactNode }> = {
     index:    { label: "Home",       icon: (f) => <Home        size={22} color={f ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
     classes:  { label: "Attendance", icon: (f) => <CheckCircle size={22} color={f ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
-    alerts:   { label: "Circulars",  icon: (f) => <Bell        size={22} color={f ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
+    menu:     { label: "Menu",       icon: (f) => <Menu        size={22} color={f ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
     profile:  { label: "Profile",    icon: (f) => <User        size={22} color={f ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
   };
 
   return (
     <View style={[tabStyles.bar, { paddingBottom: insets.bottom > 0 ? insets.bottom : 12, borderTopWidth: 1, borderTopColor: Colors.AppOutline }]}>
       {state.routes
-        .filter((route: any) => route.name !== "schedule")
+        .filter((route: any) => route.name !== "schedule" && route.name !== "alerts")
         .map((route: any) => {
           const isFocused = state.routes[state.index].key === route.key;
           const tab = TAB_MAP[route.name];
@@ -76,8 +76,9 @@ export default function FacultyTabsLayout() {
     <Tabs tabBar={(props) => <CustomTabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="index" />
       <Tabs.Screen name="schedule" options={{ href: null }} />
+      <Tabs.Screen name="menu" />
       <Tabs.Screen name="classes" />
-      <Tabs.Screen name="alerts" />
+      <Tabs.Screen name="alerts" options={{ href: null }} />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

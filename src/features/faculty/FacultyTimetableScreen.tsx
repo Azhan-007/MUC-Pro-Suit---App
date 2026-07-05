@@ -7,13 +7,12 @@ import {
   Pressable,
   Modal,
   TextInput,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { CampusCard, StatusChip, PageHeader } from '../../components';
+import { CampusCard, StatusChip, PageHeader, useCampusAlert } from '../../components';
 import { Colors } from '../../theme';
 import { User, MapPin, CheckCircle, Clock, Plus, Pencil, Trash2, X, ChevronDown, Check } from 'lucide-react-native';
 import { ClassStatus, ClassSession } from '../../types';
@@ -28,6 +27,17 @@ const WEEK_DAYS = [
   { label: 'Sat', num: '17', key: 'Sat' },
 ];
 
+const ModalKeyboardAvoidingView: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  if (Platform.OS === 'ios') {
+    return (
+      <KeyboardAvoidingView behavior="padding" style={{ width: '100%' }}>
+        {children}
+      </KeyboardAvoidingView>
+    );
+  }
+  return <>{children}</>;
+};
+
 const STATUS_STRIP_COLOR: Record<ClassStatus, string> = {
   COMPLETED: Colors.ColorPresent,
   ONGOING: Colors.BluePrimary,
@@ -39,6 +49,7 @@ const SUBJECT_OPTIONS = ['Database Management System', 'Operating System', 'Web 
 export const FacultyTimetableScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { showAlert } = useCampusAlert();
 
   const todayRaw = new Date().getDay(); // 0=Sun ... 6=Sat
   const todayKey = WEEK_DAYS[todayRaw === 0 ? 0 : todayRaw - 1]?.key ?? 'Mon';
@@ -92,7 +103,7 @@ export const FacultyTimetableScreen: React.FC = () => {
 
   const handleSave = () => {
     if (!formSubject || !formSection || !formRoom || !formTime) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      showAlert('Error', 'Please fill in all fields.');
       return;
     }
 
@@ -128,7 +139,7 @@ export const FacultyTimetableScreen: React.FC = () => {
   };
 
   const handleDeletePress = (sessionId: string) => {
-    Alert.alert(
+    showAlert(
       'Delete Class',
       'Are you sure you want to remove this class from your schedule?',
       [
@@ -271,9 +282,9 @@ export const FacultyTimetableScreen: React.FC = () => {
 
       {/* Add / Edit Form Modal Sheet */}
       <Modal visible={showFormModal} transparent animationType="slide">
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={styles.pickerOverlay}>
-            <Pressable style={styles.pickerDismiss} onPress={() => setShowFormModal(false)} />
+        <View style={styles.pickerOverlay}>
+          <Pressable style={styles.pickerDismiss} onPress={() => setShowFormModal(false)} />
+          <ModalKeyboardAvoidingView>
             <View style={[styles.pickerSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>
@@ -284,7 +295,12 @@ export const FacultyTimetableScreen: React.FC = () => {
                 </Pressable>
               </View>
 
-              <View style={styles.configContent}>
+              <ScrollView 
+                style={{ flexShrink: 1 }}
+                contentContainerStyle={styles.configContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
                 {/* Subject Selector */}
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Subject</Text>
@@ -334,10 +350,10 @@ export const FacultyTimetableScreen: React.FC = () => {
                 <Pressable style={styles.saveBtn} onPress={handleSave}>
                   <Text style={styles.saveBtnText}>Save Schedule</Text>
                 </Pressable>
-              </View>
+              </ScrollView>
             </View>
-          </View>
-        </KeyboardAvoidingView>
+          </ModalKeyboardAvoidingView>
+        </View>
       </Modal>
 
       {/* Subject Selector sub-modal */}
@@ -475,6 +491,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
+    zIndex: 9999,
+    elevation: 10,
   },
   pickerDismiss: {
     flex: 1,
@@ -483,15 +501,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.AppSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 16,
+    paddingTop: 20,
     maxHeight: '85%',
+    overflow: 'hidden',
   },
   pickerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingTop: 4,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.AppOutline,
   },
