@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -26,8 +26,11 @@ function AuthGuard() {
   const { isLoggedIn, role } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
 
   useEffect(() => {
+    if (!navigationState?.key) return;
+
     const inAuthGroup = (segments[0] as string) === '(auth)';
     const isStudentRoute = (segments[0] as string) === 'student';
     const isFacultyRoute = (segments[0] as string) === 'faculty';
@@ -39,7 +42,7 @@ function AuthGuard() {
     } else if (isLoggedIn && role === 'FACULTY' && !isFacultyRoute) {
       router.replace('/faculty' as any);
     }
-  }, [isLoggedIn, role, segments]);
+  }, [isLoggedIn, role, segments, navigationState]);
 
   return null;
 }
@@ -55,9 +58,16 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    }, 3500);
+
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      clearTimeout(timer);
+      SplashScreen.hideAsync().catch(() => {});
     }
+
+    return () => clearTimeout(timer);
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
