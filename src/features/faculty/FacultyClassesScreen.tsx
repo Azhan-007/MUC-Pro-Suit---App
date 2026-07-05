@@ -1,36 +1,74 @@
 import React from "react";
 import {
-  View, Text, ScrollView, StyleSheet, Pressable, Alert, Modal,
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Colors } from "../../theme";
-import { CampusCard } from "../../components";
+import { CampusCard, CustomButton, useCampusAlert } from "../../components";
 import { getDefaultAttendanceEntries } from "../../data/mockFacultyData";
 import { StudentAttendanceEntry } from "../../types";
-import { Check, X, Clock, CheckCircle, ChevronDown, SlidersHorizontal, List, Grid, ArrowLeft } from "lucide-react-native";
+import { 
+  Check, X, Clock, CheckCircle, ChevronDown, SlidersHorizontal, List, Grid, ArrowLeft, Pencil, Trash2 
+} from "lucide-react-native";
+import { getDayOrder } from "../../utils/dayOrder";
+
+const ModalKeyboardAvoidingView: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  if (Platform.OS === 'ios') {
+    return (
+      <KeyboardAvoidingView behavior="padding" style={{ width: "100%" }}>
+        {children}
+      </KeyboardAvoidingView>
+    );
+  }
+  return <>{children}</>;
+};
 
 type AttStatus = "PRESENT" | "ABSENT" | "LATE";
-
-const CLASSES = [
-  "I B.Sc CS",
-  "II B.Sc CS",
-  "III B.Sc CS",
-  "I BCA",
-  "II BCA",
-  "III BCA",
-];
 
 export const FacultyClassesScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [selectedClass, setSelectedClass] = React.useState<string>("III B.Sc CS");
+  const { showAlert } = useCampusAlert();
+  const params = useLocalSearchParams<{
+    subjectName?: string;
+    classCode?: string;
+    period?: string;
+    date?: string;
+    originalFaculty?: string;
+    shift?: string;
+  }>();
+
+  const [selectedClass, setSelectedClass] = React.useState<string>(params.classCode ?? "III B.Sc CS");
   const [showClassPicker, setShowClassPicker] = React.useState(false);
-  const [selectedHour, setSelectedHour] = React.useState<"1" | "2" | "3" | "4" | "5">("1");
-  const [selectedSubject, setSelectedSubject] = React.useState<string>("Database Management System");
-  const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
+  
+  const [selectedShift, setSelectedShift] = React.useState<"Shift I" | "Shift II" | "Girls">(
+    (params.shift as any) ?? "Shift I"
+  );
+
+  const initialHour = params.period ? params.period.replace(/[^0-9]/g, "") : "1";
+  const [selectedHour, setSelectedHour] = React.useState<"1" | "2" | "3" | "4" | "5">(
+    (initialHour === "1" || initialHour === "2" || initialHour === "3" || initialHour === "4" || initialHour === "5"
+      ? initialHour
+      : "1") as any
+  );
+  const [selectedSubject, setSelectedSubject] = React.useState<string>(params.subjectName ?? "Database Management System");
+  const [selectedDate, setSelectedDate] = React.useState<Date>(() => {
+    if (params.date) {
+      const parsed = new Date(params.date);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return new Date();
+  });
   const [showDatePicker, setShowDatePicker] = React.useState(false);
-  const [entries, setEntries] = React.useState<StudentAttendanceEntry[]>(getDefaultAttendanceEntries);
   const [showConfirm, setShowConfirm] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
 
@@ -40,16 +78,84 @@ export const FacultyClassesScreen: React.FC = () => {
   // Layout View Mode state (List vs. Grid Box format)
   const [viewMode, setViewMode] = React.useState<"list" | "grid">("list");
 
-  React.useEffect(() => {
-    if (selectedClass.includes("III")) {
-      setSelectedSubject("Database Management System");
-    } else {
-      setSelectedSubject("Operating System");
-    }
-  }, [selectedClass]);
+  // Lesson Topic & Description State
+  const defaultTopic = params.subjectName
+    ? `${params.subjectName} - Lecture (Engaged)`
+    : "Database Normalization";
+  const [lessonTopic, setLessonTopic] = React.useState(defaultTopic);
+  const [lessonDesc, setLessonDesc] = React.useState(
+    params.subjectName
+      ? `Engaged attendance for ${params.originalFaculty ?? "original teacher"}.`
+      : "Covered first normal form and second normal form examples."
+  );
+  const [showLessonModal, setShowLessonModal] = React.useState(false);
+  const [tempTopic, setTempTopic] = React.useState(lessonTopic);
+  const [tempDesc, setTempDesc] = React.useState(lessonDesc);
 
-  const formatDate = (date: Date) =>
-    date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  // Student Entries (uses MUC default mock students for selected class)
+  const [entries, setEntries] = React.useState<StudentAttendanceEntry[]>(getDefaultAttendanceEntries);
+
+  React.useEffect(() => {
+    if (params.classCode) {
+      setSelectedClass(params.classCode);
+    }
+    if (params.shift) {
+      setSelectedShift(params.shift as any);
+    }
+    if (params.subjectName) {
+      setSelectedSubject(params.subjectName);
+      setSelectedHour(prev => {
+        const initialHour = params.period ? params.period.replace(/[^0-9]/g, "") : "1";
+        return (initialHour === "1" || initialHour === "2" || initialHour === "3" || initialHour === "4" || initialHour === "5"
+          ? initialHour
+          : prev) as any;
+      });
+      if (params.date) {
+        const parsed = new Date(params.date);
+        if (!isNaN(parsed.getTime())) {
+          setSelectedDate(parsed);
+        }
+      }
+      const newTopic = `${params.subjectName} - Lecture (Engaged)`;
+      setLessonTopic(newTopic);
+      setTempTopic(newTopic);
+      const newDesc = `Engaged attendance for ${params.originalFaculty ?? "original teacher"}.`;
+      setLessonDesc(newDesc);
+      setTempDesc(newDesc);
+    }
+  }, [params.classCode, params.subjectName, params.period, params.date, params.originalFaculty, params.shift]);
+
+  React.useEffect(() => {
+    // Only run default logic if we did not come from routing params
+    if (!params.subjectName) {
+      if (selectedClass.includes("III")) {
+        setSelectedSubject("Database Management System");
+      } else {
+        setSelectedSubject("Operating System");
+      }
+    }
+  }, [selectedClass, params.subjectName]);
+
+  React.useEffect(() => {
+    // Dynamically update student roll number prefix to match Shift:
+    // Shift I: 12xx, Shift II: 14xx, Girls: 15xx
+    let prefix = "12";
+    if (selectedShift === "Shift II") prefix = "14";
+    if (selectedShift === "Girls") prefix = "15";
+
+    setEntries(
+      getDefaultAttendanceEntries().map((student, idx) => ({
+        ...student,
+        rollNo: `${prefix}${(idx + 1).toString().padStart(2, "0")}`,
+      }))
+    );
+  }, [selectedShift, selectedClass]);
+
+  const formatDate = (date: Date) => {
+    const dtStr = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const doStr = getDayOrder(date) || "D1";
+    return `${dtStr} (${doStr})`;
+  };
 
   const getPastDates = () => {
     const dates = [];
@@ -93,6 +199,96 @@ export const FacultyClassesScreen: React.FC = () => {
     setEntries(getDefaultAttendanceEntries());
   };
 
+  // Action Tools handlers
+  const handleCopyAttendance = (sourceHour: string) => {
+    showAlert(
+      "Copy Attendance",
+      `Copy attendance markings from period Hour ${sourceHour}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Copy",
+          onPress: () => {
+            setEntries((prev) =>
+              prev.map((e, idx) => ({
+                ...e,
+                status: idx % 6 === 0 ? "ABSENT" : idx % 11 === 0 ? "LATE" : "PRESENT",
+              }))
+            );
+            showAlert("Success", `Attendance copied from Hour ${sourceHour} successfully.`);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleMarkAllToggle = () => {
+    const allPresent = entries.every((e) => e.status === "PRESENT");
+    setEntries((prev) =>
+      prev.map((e) => ({
+        ...e,
+        status: allPresent ? "ABSENT" : "PRESENT",
+      }))
+    );
+  };
+
+  const handleSortPress = () => {
+    showAlert(
+      "Sort Students",
+      "Select sorting order:",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sort by Roll Number (Asc)",
+          onPress: () => {
+            setEntries((prev) =>
+              [...prev].sort((a, b) => parseInt(a.rollNo, 10) - parseInt(b.rollNo, 10))
+            );
+          },
+        },
+        {
+          text: "Sort by Name (A-Z)",
+          onPress: () => {
+            setEntries((prev) =>
+              [...prev].sort((a, b) => a.name.localeCompare(b.name))
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleResetPress = () => {
+    showAlert(
+      "Reset Attendance",
+      "Are you sure you want to clear and reset all student markings?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: () => {
+            resetAttendance();
+            showAlert("Reset Completed", "All student markings reset to PRESENT.");
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenEditTopic = () => {
+    setTempTopic(lessonTopic);
+    setTempDesc(lessonDesc);
+    setShowLessonModal(true);
+  };
+
+  const handleSaveLessonInfo = () => {
+    setLessonTopic(tempTopic);
+    setLessonDesc(tempDesc);
+    setShowLessonModal(false);
+    showAlert("Saved", "Lesson topic and description updated.");
+  };
+
   const StatusBtn = ({ label, status, current, studentId }: { label: string; status: AttStatus; current: AttStatus; studentId: string }) => {
     const active = current === status;
     const COLOR = status === "PRESENT" ? Colors.ColorPresent : status === "ABSENT" ? Colors.ColorAbsent : Colors.ColorPending;
@@ -124,7 +320,7 @@ export const FacultyClassesScreen: React.FC = () => {
         </Pressable>
       </View>
 
-      {/* Summary bar */}
+      {/* Summary bar (Restored to top) */}
       <View style={styles.summaryBar}>
         <View style={styles.summaryItem}>
           <Text style={[styles.summaryCount, { color: Colors.ColorPresent }]}>{presentCount}</Text>
@@ -142,8 +338,26 @@ export const FacultyClassesScreen: React.FC = () => {
         </View>
         <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
-          <Text style={summaryCountStyle}>{entries.length}</Text>
+          <Text style={styles.summaryCount}>{entries.length}</Text>
           <Text style={styles.summaryLabel}>Total</Text>
+        </View>
+      </View>
+
+      {/* ── Shift Tabs ── */}
+      <View style={styles.shiftTabBar}>
+        <View style={styles.shiftTabsContainer}>
+          {["Shift I", "Shift II", "Girls"].map((shift) => {
+            const active = selectedShift === shift;
+            return (
+              <Pressable
+                key={shift}
+                style={[styles.shiftTab, active && styles.shiftTabActive]}
+                onPress={() => setSelectedShift(shift as any)}
+              >
+                <Text style={[styles.shiftTabTxt, active && styles.shiftTabTxtActive]}>{shift}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
 
@@ -173,6 +387,55 @@ export const FacultyClassesScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Action Tools Row */}
+        <View style={styles.toolsRow}>
+          {/* Copy Att. */}
+          <View style={styles.toolCol}>
+            <Text style={styles.toolLabel}>Copy Att.</Text>
+            <Pressable 
+              style={styles.dropdownTriggerSmall} 
+              onPress={() => {
+                showAlert("Copy Source", "Select period to copy from:", [
+                  { text: "1st Hour", onPress: () => handleCopyAttendance("1") },
+                  { text: "2nd Hour", onPress: () => handleCopyAttendance("2") },
+                  { text: "3rd Hour", onPress: () => handleCopyAttendance("3") },
+                  { text: "4th Hour", onPress: () => handleCopyAttendance("4") },
+                  { text: "Cancel", style: "cancel" },
+                ]);
+              }}
+            >
+              <Text style={styles.dropdownValueText}>{selectedHour}</Text>
+              <ChevronDown size={12} color="#64748B" />
+            </Pressable>
+          </View>
+
+          {/* Mark All */}
+          <View style={styles.toolCol}>
+            <Text style={styles.toolLabel}>Mark All</Text>
+            <Pressable style={styles.checkboxTrigger} onPress={handleMarkAllToggle}>
+              <View style={[styles.checkboxBox, entries.every(e => e.status === "PRESENT") && styles.checkboxActive]} />
+            </Pressable>
+          </View>
+
+          {/* Sort By */}
+          <View style={styles.toolCol}>
+            <Text style={styles.toolLabel}>Sort by</Text>
+            <Pressable style={styles.dropdownTriggerSmall} onPress={handleSortPress}>
+              <Text style={styles.dropdownValueText} numberOfLines={1}>Sort...</Text>
+              <ChevronDown size={12} color="#64748B" />
+            </Pressable>
+          </View>
+
+          {/* Delete (Reset) */}
+          <View style={styles.toolCol}>
+            <Text style={styles.toolLabel}>Delete</Text>
+            <Pressable style={styles.deleteBtn} onPress={handleResetPress}>
+              <Trash2 size={15} color={Colors.ColorAbsent} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Student list render */}
         {viewMode === "list" ? (
           entries.map((entry) => (
             <CampusCard key={entry.studentId} style={styles.studentCard} elevation="sm">
@@ -227,6 +490,40 @@ export const FacultyClassesScreen: React.FC = () => {
             })}
           </View>
         )}
+
+        {/* Lesson Topic Card */}
+        <CampusCard style={styles.infoCard} elevation="sm">
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardInfoLabel}>Lesson Topic</Text>
+            <Pressable onPress={handleOpenEditTopic} hitSlop={8}>
+              <Pencil size={15} color={Colors.BluePrimary} />
+            </Pressable>
+          </View>
+          <Text style={styles.cardInfoValue}>{lessonTopic}</Text>
+          
+          <Text style={[styles.cardInfoLabel, { marginTop: 12 }]}>Description</Text>
+          <Text style={styles.cardInfoValue}>{lessonDesc}</Text>
+        </CampusCard>
+
+        {/* Marked By Signature Box */}
+        <CampusCard style={styles.markedByCard} elevation="sm">
+          <Text style={styles.markedByLabel}>Marked by</Text>
+          <View style={styles.markedByContent}>
+            <View style={styles.markedByLeft}>
+              <View style={styles.facultyAvatar}>
+                <Text style={styles.facultyAvatarText}>PR</Text>
+              </View>
+              <View>
+                <Text style={styles.facultyName}>Dr P Rizwan Ahmed</Text>
+                <Text style={styles.facultyDept}>Department of Computer Science (S1)</Text>
+              </View>
+            </View>
+            <Pressable onPress={() => showAlert("Report View", "Navigating to marked history logs...")}>
+              <Text style={styles.viewReportText}>View Report &gt;</Text>
+            </Pressable>
+          </View>
+        </CampusCard>
+
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -237,6 +534,57 @@ export const FacultyClassesScreen: React.FC = () => {
           <Text style={styles.submitText}>Submit Attendance</Text>
         </Pressable>
       </View>
+
+      {/* Lesson Edit Modal Sheet */}
+      <Modal visible={showLessonModal} transparent animationType="slide">
+        <View style={styles.pickerOverlay}>
+          <Pressable style={styles.pickerDismiss} onPress={() => setShowLessonModal(false)} />
+          <ModalKeyboardAvoidingView>
+            <View style={[styles.pickerSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Edit Lesson Details</Text>
+                <Pressable onPress={() => setShowLessonModal(false)} style={styles.pickerCloseBtn}>
+                  <X size={20} color={Colors.AppOnBackground} />
+                </Pressable>
+              </View>
+
+              <ScrollView 
+                contentContainerStyle={styles.modalScrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Lesson Topic</Text>
+                  <TextInput
+                    style={styles.textInputArea}
+                    value={tempTopic}
+                    onChangeText={setTempTopic}
+                    placeholder="Enter lesson topic..."
+                    placeholderTextColor="#94A3B8"
+                    multiline
+                    numberOfLines={2}
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Description</Text>
+                  <TextInput
+                    style={styles.textInputArea}
+                    value={tempDesc}
+                    onChangeText={setTempDesc}
+                    placeholder="Enter description..."
+                    placeholderTextColor="#94A3B8"
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+
+                <CustomButton text="Save Changes" onPress={handleSaveLessonInfo} style={{ marginTop: 12 }} />
+              </ScrollView>
+            </View>
+          </ModalKeyboardAvoidingView>
+        </View>
+      </Modal>
 
       {/* Confirmation Modal */}
       <Modal visible={showConfirm} transparent animationType="fade">
@@ -292,7 +640,10 @@ export const FacultyClassesScreen: React.FC = () => {
                 <X size={20} color={Colors.AppOnBackground} />
               </Pressable>
             </View>
-            <View style={styles.configContent}>
+            <ScrollView 
+              contentContainerStyle={styles.configContent}
+              showsVerticalScrollIndicator={false}
+            >
               {/* Date Selector */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Date</Text>
@@ -304,29 +655,11 @@ export const FacultyClassesScreen: React.FC = () => {
 
               {/* Class Selector */}
               <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Class</Text>
+                <Text style={styles.formLabel}>Class / Section</Text>
                 <Pressable style={styles.fullDropdownTrigger} onPress={() => setShowClassPicker(true)}>
                   <Text style={styles.dropdownValue}>{selectedClass}</Text>
                   <ChevronDown size={18} color={Colors.AppOnSurfaceVariant} />
                 </Pressable>
-              </View>
-
-              {/* Hour Selector */}
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Hour</Text>
-                <View style={styles.chipGroup}>
-                  {(["1", "2", "3", "4", "5"] as const).map((hr) => (
-                    <Pressable
-                      key={hr}
-                      style={[styles.hourCircle, selectedHour === hr && styles.hourCircleActive]}
-                      onPress={() => setSelectedHour(hr)}
-                    >
-                      <Text style={[styles.hourCircleText, selectedHour === hr && styles.hourCircleTextActive]}>
-                        {hr}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
               </View>
 
               {/* Subject Selector */}
@@ -350,16 +683,34 @@ export const FacultyClassesScreen: React.FC = () => {
                 </View>
               </View>
 
-              {/* Apply settings done button */}
+              {/* Hour Selector */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Period / Hour</Text>
+                <View style={styles.hourSelectorRow}>
+                  {(["1", "2", "3", "4", "5"] as const).map((hr) => {
+                    const active = selectedHour === hr;
+                    return (
+                      <Pressable
+                        key={hr}
+                        style={[styles.hourCircle, active && styles.hourCircleActive]}
+                        onPress={() => setSelectedHour(hr)}
+                      >
+                        <Text style={[styles.hourCircleText, active && styles.hourCircleTextActive]}>{hr}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
               <Pressable style={styles.applyBtn} onPress={() => setShowConfigModal(false)}>
                 <Text style={styles.applyBtnText}>Apply Settings</Text>
               </Pressable>
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
 
-      {/* Date Picker Modal */}
+      {/* Date Picker Sub-Modal */}
       <Modal visible={showDatePicker} transparent animationType="slide">
         <View style={styles.pickerOverlay}>
           <Pressable style={styles.pickerDismiss} onPress={() => setShowDatePicker(false)} />
@@ -371,23 +722,20 @@ export const FacultyClassesScreen: React.FC = () => {
               </Pressable>
             </View>
             <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
-              {getPastDates().map((date) => {
-                const active = selectedDate.toDateString() === date.toDateString();
-                const formatted = formatDate(date);
-                const dayLabel = date.toDateString() === new Date().toDateString() ? " (Today)" : "";
+              {getPastDates().map((d) => {
+                const active = selectedDate.toDateString() === d.toDateString();
                 return (
                   <Pressable
-                    key={date.toDateString()}
+                    key={d.toISOString()}
                     style={[styles.pickerItem, active && styles.pickerItemActive]}
                     onPress={() => {
-                      setSelectedDate(date);
+                      setSelectedDate(d);
                       setShowDatePicker(false);
                     }}
                   >
                     <Text style={[styles.pickerItemText, active && styles.pickerItemTextActive]}>
-                      {formatted}{dayLabel}
+                      {formatDate(d)}
                     </Text>
-                    {active && <Check size={16} color={Colors.BluePrimary} />}
                   </Pressable>
                 );
               })}
@@ -396,7 +744,7 @@ export const FacultyClassesScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Class Picker Modal */}
+      {/* Class Picker Sub-Modal */}
       <Modal visible={showClassPicker} transparent animationType="slide">
         <View style={styles.pickerOverlay}>
           <Pressable style={styles.pickerDismiss} onPress={() => setShowClassPicker(false)} />
@@ -422,7 +770,6 @@ export const FacultyClassesScreen: React.FC = () => {
                     <Text style={[styles.pickerItemText, active && styles.pickerItemTextActive]}>
                       {cls}
                     </Text>
-                    {active && <Check size={16} color={Colors.BluePrimary} />}
                   </Pressable>
                 );
               })}
@@ -434,75 +781,26 @@ export const FacultyClassesScreen: React.FC = () => {
   );
 };
 
-const summaryCountStyle = { fontSize: 20, fontWeight: "900" as const, color: Colors.AppOnBackground };
+const CLASSES = [
+  "I B.Sc CS",
+  "II B.Sc CS",
+  "III B.Sc CS",
+  "I BCA",
+  "II BCA",
+  "III BCA",
+];
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
   header: {
-    paddingHorizontal: 16, paddingVertical: 10,
+    flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: Colors.AppSurface, borderBottomWidth: 1, borderBottomColor: Colors.AppOutline,
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
   },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  headerCenter: { flex: 1, alignItems: "center", paddingHorizontal: 8 },
-  headerTitle: { fontSize: 17, fontWeight: "800", color: Colors.AppOnBackground },
-  headerActionBtn: {
-    width: 38, height: 38, alignItems: "center", justifyContent: "center",
-    borderRadius: 19, backgroundColor: Colors.BluePrimary + "0F",
-  },
-  formGroup: {
-    gap: 8,
-    marginBottom: 16,
-    width: "100%",
-  },
-  formLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: Colors.AppOnSurfaceVariant,
-  },
-  fullDropdownTrigger: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#F1F5F9",
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  chipGroup: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  fullChipGroup: {
-    flexDirection: "row",
-    width: "100%",
-    gap: 8,
-  },
-  fullSelectorChip: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.AppOutline,
-    backgroundColor: Colors.AppSurface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fullSelectorChipActive: {
-    backgroundColor: Colors.BluePrimary,
-    borderColor: Colors.BluePrimary,
-  },
-  fullSelectorChipText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: Colors.AppOnSurfaceVariant,
-  },
-  fullSelectorChipTextActive: {
-    color: "#FFFFFF",
-  },
+  headerCenter: { flex: 1, alignItems: "center" },
+  headerTitle: { fontSize: 16, fontWeight: "800", color: Colors.AppOnBackground },
+  headerActionBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  
   summaryBar: {
     flexDirection: "row", backgroundColor: Colors.AppSurface,
     borderBottomWidth: 1, borderBottomColor: Colors.AppOutline, paddingVertical: 10,
@@ -558,7 +856,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
   },
   submitText: { color: "#fff", fontSize: 15, fontWeight: "800" },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", zIndex: 9999, elevation: 10 },
   successModal: {
     backgroundColor: Colors.AppSurface, borderRadius: 20, padding: 28,
     alignItems: "center", width: "80%",
@@ -670,6 +968,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
+    zIndex: 9999,
+    elevation: 10,
   },
   pickerDismiss: {
     flex: 1,
@@ -678,16 +978,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.AppSurface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 16,
+    paddingTop: 20,
     paddingBottom: 32,
-    maxHeight: "60%",
+    maxHeight: "85%",
+    overflow: "hidden",
   },
   pickerHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingTop: 4,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.AppOutline,
   },
@@ -778,4 +1080,275 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     letterSpacing: 0.5,
   },
+  hourSelectorRow: {
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "center",
+    marginVertical: 10,
+  },
+  fullDropdownTrigger: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  formGroup: {
+    width: "100%",
+    marginBottom: 12,
+  },
+  formLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.AppOnSurfaceVariant,
+    marginBottom: 6,
+  },
+
+  // ── NEW CUSTOM STYLES ADDED ──
+  toolsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    backgroundColor: "#F8FAFC",
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    width: "100%",
+  },
+  toolCol: {
+    alignItems: "center",
+    gap: 4,
+  },
+  toolLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  dropdownTriggerSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    minWidth: 54,
+    justifyContent: "center",
+  },
+  dropdownValueText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.BluePrimary,
+  },
+  checkboxTrigger: {
+    backgroundColor: "#FFFFFF",
+    padding: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  checkboxBox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+  },
+  checkboxActive: {
+    backgroundColor: Colors.ColorPresent,
+    borderColor: Colors.ColorPresent,
+  },
+  deleteBtn: {
+    backgroundColor: "#FFF5F5",
+    padding: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 20,
+    width: "100%",
+  },
+  statBox: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingVertical: 10,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statLabelText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#64748B",
+    marginBottom: 2,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  infoCard: {
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    marginBottom: 16,
+    width: "100%",
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  cardInfoLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  cardInfoValue: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.AppOnBackground,
+    lineHeight: 18,
+  },
+  markedByCard: {
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    marginBottom: 20,
+    width: "100%",
+  },
+  markedByLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#64748B",
+    marginBottom: 10,
+  },
+  markedByContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  markedByLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  facultyAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  facultyAvatarText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#64748B",
+  },
+  facultyName: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: Colors.AppOnBackground,
+  },
+  facultyDept: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  viewReportText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.BluePrimary,
+  },
+  modalScrollContent: {
+    padding: 20,
+    gap: 16,
+  },
+  textInputArea: {
+    width: "100%",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.AppOnBackground,
+    textAlignVertical: "top",
+  },
+  fullChipGroup: {
+    flexDirection: "row",
+    width: "100%",
+    gap: 8,
+    marginTop: 4,
+  },
+  fullSelectorChip: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.AppOutline,
+    backgroundColor: Colors.AppSurface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fullSelectorChipActive: {
+    backgroundColor: Colors.BluePrimary,
+    borderColor: Colors.BluePrimary,
+  },
+  fullSelectorChipText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.AppOnSurfaceVariant,
+  },
+  fullSelectorChipTextActive: {
+    color: "#FFFFFF",
+  },
+  // Shift Tabs — segmented capsule control
+  shiftTabBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  shiftTabsContainer: {
+    flexDirection: "row",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 10,
+    padding: 4,
+  },
+  shiftTab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  shiftTabActive: {
+    backgroundColor: "#FFFFFF",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  shiftTabTxt: { fontSize: 12.5, fontWeight: "600", color: "#64748B" },
+  shiftTabTxtActive: { color: Colors.BluePrimary, fontWeight: "800" },
 });

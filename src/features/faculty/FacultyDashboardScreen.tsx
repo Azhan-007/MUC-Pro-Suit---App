@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import {
   Bell,
   CheckCircle,
@@ -30,7 +30,8 @@ import {
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useCampusStore } from '../../store/campusStore';
-import { mockFacultyTimetable, mockFacultyStats } from '../../data/mockFacultyData';
+import { mockFacultyTimetable, mockFacultyStats, mockFacultyNotifications, mockFacultyCirculars } from '../../data/mockFacultyData';
+import { getDayOrder, DAY_ORDER_MAP } from '../../utils/dayOrder';
 import {
   CampusCard,
   SectionHeader,
@@ -45,6 +46,20 @@ const CAROUSEL_WIDTH = SCREEN_WIDTH - 32;
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+// Parse "DD Mon YYYY" → Date for sorting
+const MONTH_MAP: Record<string, number> = {
+  Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+  Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+};
+const parseCircularDate = (dateStr: string): number => {
+  const parts = dateStr.trim().split(' ');
+  if (parts.length !== 3) return 0;
+  const [day, mon, year] = parts;
+  const m = MONTH_MAP[mon];
+  if (m === undefined) return 0;
+  return new Date(Number(year), m, Number(day)).getTime();
+};
+
 export const FacultyDashboardScreen: React.FC = () => {
   const router = useRouter();
   const [scrolled, setScrolled] = React.useState(false);
@@ -58,10 +73,25 @@ export const FacultyDashboardScreen: React.FC = () => {
 
   const initial = faculty.name.split(' ').filter(w => /[A-Za-z]/.test(w[0])).map(w => w[0]).join('').slice(0, 2);
 
-  const todayIdx = new Date().getDay();
+  const [unreadCount, setUnreadCount] = React.useState(0);
+  const [currentDate, setCurrentDate] = React.useState(new Date());
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setCurrentDate(new Date());
+      const count = mockFacultyNotifications.filter(n => !n.isRead && !n.isArchived).length;
+      setUnreadCount(count);
+    }, [])
+  );
+
+  const todayIdx = currentDate.getDay();
   const todayKey = DAYS[todayIdx];
   const isWeekendDay = todayKey === 'Sun' || todayKey === 'Sat';
-  const todayClasses = mockFacultyTimetable[isWeekendDay ? 'Mon' : todayKey] || [];
+
+  const todayDayOrder = getDayOrder(currentDate);
+  const mappedDay = DAY_ORDER_MAP[todayDayOrder] || 'Mon';
+  const todayClasses = isWeekendDay ? [] : (mockFacultyTimetable[mappedDay] || []);
+
   const ongoingClass = todayClasses.find((cls) => cls.status === 'ONGOING');
   const upcomingClasses = todayClasses.filter((cls) => cls.status === 'UPCOMING');
 
@@ -170,9 +200,16 @@ export const FacultyDashboardScreen: React.FC = () => {
           </Pressable>
           <Pressable
             style={styles.bellBtn}
-            onPress={() => router.push('/faculty/alerts' as any)}
+            onPress={() => router.push('/faculty/notifications' as any)}
           >
-            <Bell size={22} color={Colors.AppOnBackground} />
+            <View style={{ position: 'relative' }}>
+              <Bell size={22} color={Colors.AppOnBackground} />
+              {unreadCount > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </View>
           </Pressable>
         </View>
       </View>
@@ -225,7 +262,7 @@ export const FacultyDashboardScreen: React.FC = () => {
 
         {/* ── 5. Today's Classes ── */}
         <SectionHeader
-          title="Today's Classes"
+          title={isWeekendDay ? "Today's Classes (Weekend)" : `Today's Classes (${todayDayOrder})`}
           actionText="View Schedule"
           onActionPress={() => router.push('/faculty/schedule' as any)}
         />
@@ -281,9 +318,23 @@ export const FacultyDashboardScreen: React.FC = () => {
         {/* No active classes placeholder */}
         {!ongoingClass && upcomingClasses.length === 0 && (
           <CampusCard borderColor={Colors.AppOutline} style={styles.card} elevation="sm">
-            <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.AppOnSurfaceVariant }}>
-                No more classes scheduled for today!
+            <View style={{ alignItems: 'center', paddingVertical: 24, paddingHorizontal: 16 }}>
+              <View style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: '#F1F5F9',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 10,
+              }}>
+                <Calendar size={20} color="#64748B" />
+              </View>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#1E293B', textAlign: 'center' }}>
+                No Classes Scheduled Today
+              </Text>
+              <Text style={{ fontSize: 12, color: '#64748B', textAlign: 'center', marginTop: 4 }}>
+                Your schedule is clear for this Day Order.
               </Text>
             </View>
           </CampusCard>
@@ -297,9 +348,13 @@ export const FacultyDashboardScreen: React.FC = () => {
         />
 
         <CampusCard style={styles.announcementsContainerCard} elevation="sm">
-          {announcements.slice(0, 3).map((item, index) => {
+          {[...mockFacultyCirculars]
+            .sort((a, b) => parseCircularDate(b.publishedDate) - parseCircularDate(a.publishedDate))
+            .slice(0, 3)
+            .map((item, index) => {
             const iconInfo = getCategoryIconInfo(item.category);
-            const isLast = index === announcements.slice(0, 3).length - 1;
+            const isLast = index === Math.min(3, mockFacultyCirculars.length) - 1;
+            const isUnread = !item.isRead;
             return (
               <View key={item.id}>
                 <Pressable
@@ -313,14 +368,31 @@ export const FacultyDashboardScreen: React.FC = () => {
                     {iconInfo.icon}
                   </View>
                   <View style={styles.announcementFeedContent}>
-                    <Text style={styles.announcementFeedTitle} numberOfLines={1}>
-                      {item.title}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      {isUnread && (
+                        <View style={styles.circularUnreadDot} />
+                      )}
+                      <Text
+                        numberOfLines={1}
+                        style={{ flex: 1, fontSize: 13, fontWeight: isUnread ? '800' : '600', color: Colors.AppOnBackground }}
+                      >
+                        {item.title}
+                      </Text>
+                    </View>
                     <Text style={styles.announcementFeedDate}>
-                      {item.category} • {item.dateText}
+                      {item.category} • {item.publishedDate}
                     </Text>
                   </View>
-                  <ChevronRight size={16} color={Colors.AppOnSurfaceVariant} style={{ marginLeft: 8 }} />
+                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                    {item.priority === 'Critical' || item.priority === 'Urgent' ? (
+                      <View style={[styles.circularPriorityBadge, { backgroundColor: item.priority === 'Critical' ? '#FEE2E2' : '#FEF3C7' }]}>
+                        <Text style={[styles.circularPriorityText, { color: item.priority === 'Critical' ? '#DC2626' : '#D97706' }]}>
+                          {item.priority}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <ChevronRight size={14} color={Colors.AppOnSurfaceVariant} />
+                  </View>
                 </Pressable>
                 {!isLast && <View style={styles.feedDivider} />}
               </View>
@@ -474,6 +546,22 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.AppOutline,
     marginLeft: 70,
   },
+  circularUnreadDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: Colors.BluePrimary,
+    flexShrink: 0,
+  },
+  circularPriorityBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  circularPriorityText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
   todayAttHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -502,5 +590,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#374151',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: Colors.RedError,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  bellBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
   },
 });

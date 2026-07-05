@@ -60,6 +60,7 @@ export interface ClassSession {
   day: string;
   status: 'COMPLETED' | 'ONGOING' | 'UPCOMING';
   totalStudents: number;
+  shift?: 'SHIFT_I' | 'SHIFT_II' | 'GIRLS';
 }
 
 export interface StudentAttendanceEntry {
@@ -252,22 +253,96 @@ export interface StudyMaterial {
   description?: string;
 }
 
-export interface BorrowedBook {
-  id: string;
-  title: string;
-  author: string;
-  borrowDate: string;
-  dueDate: string;
-  daysLeft: number;
-  status: 'SAFE' | 'OVERDUE';
+// Leaves
+// ─────────────────────────────────────────────
+export interface LeaveBalance {
+  total: number;
+  used: number;
+  remaining: number;
 }
 
+export interface LeaveAllocation {
+  id: string;
+  year: string;
+  balances: {
+    casualLeave: LeaveBalance;
+    medicalLeave: LeaveBalance;
+    dutyLeave: LeaveBalance;
+    earnedLeave: LeaveBalance;
+    lossOfPay: LeaveBalance;
+    maternityPaternityLeave?: LeaveBalance;
+  };
+}
+
+export interface LeaveApplication {
+  id: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: 'DRAFT' | 'APPLIED' | 'VERIFIED' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | 'PENDING';
+  totalDays: number;
+  allocationYear: string;
+  appliedDate: string;
+  halfDay?: boolean;
+  emergencyContact?: string;
+  attachmentName?: string;
+}
+
+// ─────────────────────────────────────────────
+// Library
+// ─────────────────────────────────────────────
 export interface LibraryBook {
   id: string;
   title: string;
   author: string;
-  copiesAvailable: number;
-  isAvailable: boolean;
+  copiesAvailable?: number;
+  isAvailable?: boolean;
+  category: string;
+  publisher: string;
+  accessNo: string;
+  rackNo: string;
+  isbn: string;
+  language: string;
+  edition: string;
+  availableCopies: number;
+  totalCopies: number;
+  status: 'AVAILABLE' | 'ISSUED' | 'RESERVED' | 'UNAVAILABLE';
+  description: string;
+  imageKey?: string;
+}
+
+export interface BorrowedBook {
+  id: string;
+  bookId: string;
+  title: string;
+  author: string;
+  borrowDate?: string;
+  issueDate: string;
+  dueDate: string;
+  daysLeft?: number;
+  renewCount: number;
+  accessNo: string;
+  status: 'SAFE' | 'OVERDUE' | 'ISSUED' | 'DUE_SOON';
+}
+
+export interface ReadingHistoryEntry {
+  id: string;
+  bookId: string;
+  title: string;
+  author: string;
+  issueDate: string;
+  returnDate: string;
+  totalDays: number;
+  renewCount: number;
+}
+
+export interface LibraryStats {
+  borrowedCount: number;
+  returnedCount: number;
+  overdueCount: number;
+  renewedCount: number;
+  currentCount: number;
 }
 
 export interface JobPosting {
@@ -281,16 +356,6 @@ export interface JobPosting {
   status: 'APPLY' | 'APPLIED' | 'SHORTLISTED' | 'NOT_ELIGIBLE';
 }
 
-export interface CollegeEvent {
-  id: string;
-  title: string;
-  dateText: string;
-  timeText: string;
-  venue: string;
-  category: 'TECHNICAL' | 'CULTURAL' | 'SPORTS';
-  isRegistered: boolean;
-}
-
 export interface CertificateRequest {
   id: string;
   certificateType: string;
@@ -298,5 +363,129 @@ export interface CertificateRequest {
   submittedDate: string;
   status: 'PENDING' | 'APPROVED' | 'ISSUED' | 'REJECTED';
   downloadUrl?: string;
+}
+
+// ─────────────────────────────────────────────
+// Placement Cell
+// ─────────────────────────────────────────────
+export interface PlacementDrive {
+  id: string;
+  companyName: string;
+  role: string;
+  package: string;
+  location: string;
+  driveDate: string;
+  deadline: string;
+  registeredCount: number;
+  eligibleCount: number;
+  status: 'UPCOMING' | 'REGISTRATION_OPEN' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+  jobType: 'Full Time' | 'Internship' | 'Intern + FTO';
+  minCgpa: number;
+  passingYear: string;
+  departments: string[];
+  skills: string[];
+  venue: string;
+  selectionProcess: string[];
+  hrContact: string;
+  jobDescription: string;
+  timelineSteps: string[];
+  currentTimelineStepIndex: number;
+}
+
+export interface PlacementStudent {
+  id: string;
+  name: string;
+  registerNumber: string;
+  department: string;
+  cgpa: number;
+  currentStatus: 'ELIGIBLE' | 'REGISTERED' | 'ATTENDED' | 'SHORTLISTED' | 'SELECTED' | 'REJECTED';
+  driveId: string;
+}
+
+export interface PlacementStats {
+  totalDrives: number;
+  upcomingDrives: number;
+  ongoingDrives: number;
+  completedDrives: number;
+  totalRegistered: number;
+  totalSelected: number;
+}
+
+// ─────────────────────────────────────────────
+// College Events
+// ─────────────────────────────────────────────
+export interface CollegeEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  day: string;
+  month: string;
+  year: string;
+  dateText?: string;
+  timeText?: string;
+  startTime: string;
+  endTime: string;
+  venue: string;
+  category: 'TECHNICAL' | 'CULTURAL' | 'SPORTS' | 'Technical' | 'Cultural' | 'Academic' | 'National Festival' | 'Symposium';
+  isRegistered?: boolean;
+  coordinator: string;
+  assignedDuty: 'Technical Judge' | 'Coordinator' | 'Volunteer Incharge' | 'Registration Desk' | 'Discipline Committee' | 'Stage Committee' | 'Hospitality' | 'Transport' | 'Documentation' | 'Photography' | 'Evaluation Committee' | string;
+  dutyStatus: 'ASSIGNED' | 'CONFIRMED' | 'REPORTED' | 'STARTED' | 'COMPLETED';
+  status: 'UPCOMING' | 'TODAY' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+  reportingTime: string;
+  dressCode: string;
+  assignedCommittee: string;
+  specialInstructions: string;
+  requiredDocuments: string[];
+  emergencyContact: string;
+  timelineSteps: string[];
+  currentTimelineStepIndex: number;
+}
+
+export interface CircularAttachment {
+  name: string;
+  type: 'PDF' | 'Image' | 'Word' | 'Excel' | 'ZIP';
+  size: string;
+}
+
+export interface CircularItem {
+  id: string;
+  category: 'Academic' | 'Exams' | 'Placement' | 'Library' | 'Administration' | 'Events' | 'HR' | 'Finance' | 'Scholarships' | 'Research' | 'Training' | 'IQAC' | 'NAAC' | 'General';
+  priority: 'Normal' | 'Important' | 'Urgent' | 'Critical';
+  department: string;
+  targetDesignation: string;
+  publisher: string;
+  publishedDate: string;
+  expiryDate: string;
+  title: string;
+  summary: string;
+  description: string;
+  coverImage?: string;
+  attachmentCount: number;
+  attachments: CircularAttachment[];
+  circularNo: string;
+  referenceNo: string;
+  isRead: boolean;
+  isBookmarked: boolean;
+  isArchived: boolean;
+}
+
+export interface ERPNotification {
+  id: string;
+  module: 'Academic' | 'Attendance' | 'Timetable' | 'Leave' | 'Circulars' | 'Library' | 'Placement' | 'Events' | 'Examination' | 'Faculty' | 'HR' | 'Finance' | 'System' | 'Emergency';
+  category: string;
+  priority: 'Critical' | 'Urgent' | 'Important' | 'Normal' | 'Low';
+  title: string;
+  description: string;
+  referenceId?: string;
+  createdTime: string;
+  readTime?: string;
+  expiryTime?: string;
+  isRead: boolean;
+  isPinned: boolean;
+  isArchived: boolean;
+  actionRequired?: 'View' | 'Open' | 'Download' | 'Renew' | 'Approve' | 'Reject' | 'Join' | 'Acknowledge' | 'Dismiss' | string;
+  deepLink: string;
 }
 

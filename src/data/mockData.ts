@@ -356,7 +356,7 @@ export const mockStudyMaterials: StudyMaterial[] = [
 export const mockBorrowedBooks: BorrowedBook[] = [
   { id: 'LIB-3021', title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', borrowDate: 'Oct 10, 2026', dueDate: 'Oct 25, 2026', daysLeft: 23, status: 'SAFE' },
   { id: 'LIB-4098', title: 'Database System Concepts', author: 'Abraham Silberschatz', borrowDate: 'Oct 12, 2026', dueDate: 'Oct 27, 2026', daysLeft: 25, status: 'SAFE' }
-];
+] as any;
 
 export const mockLibraryCatalog: LibraryBook[] = [
   { id: 'CAT-101', title: 'Software Engineering: A Practitioner\'s Approach', author: 'Roger S. Pressman', copiesAvailable: 8, isAvailable: true },
@@ -364,7 +364,7 @@ export const mockLibraryCatalog: LibraryBook[] = [
   { id: 'CAT-103', title: 'Compilers: Principles, Techniques, and Tools', author: 'Alfred V. Aho', copiesAvailable: 0, isAvailable: false },
   { id: 'CAT-104', title: 'Computer Networks', author: 'Andrew S. Tanenbaum', copiesAvailable: 5, isAvailable: true },
   { id: 'CAT-105', title: 'Artificial Intelligence: A Modern Approach', author: 'Stuart Russell', copiesAvailable: 2, isAvailable: true }
-];
+] as any;
 
 export const mockJobPostings: JobPosting[] = [
   { id: 'JOB-001', companyName: 'Google', role: 'Software Engineering Intern (Summer 2027)', packageText: '₹1.2 Lakhs/month', location: 'Bangalore, India', eligibility: 'CGPA >= 8.0, B.Sc CS / BCA / B.Tech', deadline: 'Oct 31, 2026', status: 'APPLY' },
@@ -378,7 +378,7 @@ export const mockCollegeEvents: CollegeEvent[] = [
   { id: 'EVT-102', title: 'Annual Cultural Fest - MUC FEST \'26', dateText: 'Nov 12', timeText: '04:00 PM', venue: 'College Grounds & Auditorium', category: 'CULTURAL', isRegistered: true },
   { id: 'EVT-103', title: 'Inter-Departmental Cricket Tournament', dateText: 'Nov 15', timeText: '08:30 AM', venue: 'Sports Arena', category: 'SPORTS', isRegistered: false },
   { id: 'EVT-104', title: 'Workshop on Cyber Security & Ethical Hacking', dateText: 'Oct 29', timeText: '10:30 AM', venue: 'Seminar Hall B', category: 'TECHNICAL', isRegistered: false }
-];
+] as any;
 
 export const mockCertificateRequests: CertificateRequest[] = [
   { id: 'REQ-2810', certificateType: 'Bonafide Certificate', reason: 'For applying to State Scholarship Portal', submittedDate: 'Oct 20, 2026', status: 'ISSUED', downloadUrl: 'https://mucollege.edu.in/certificates/sample.pdf' },
