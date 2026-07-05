@@ -10,6 +10,7 @@ import {
   Dimensions,
   Platform,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +33,11 @@ import {
   Megaphone,
   Award,
   TrendingUp,
+  FileText,
+  AlertCircle,
+  Clock,
+  Plus,
+  Check,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useCampusStore } from '../../store/campusStore';
@@ -71,11 +77,92 @@ const CAROUSEL_ITEMS = [
   },
 ];
 
+const getClassStatusRealtime = (timeStr: string): 'COMPLETED' | 'ONGOING' | 'UPCOMING' => {
+  const normalized = timeStr.replace(/\s+/g, '').replace(/[\n\-–]/g, '-');
+  const parts = normalized.split('-');
+  if (parts.length < 2) return 'UPCOMING';
+
+  const [startStr, endStr] = parts;
+  const parseToMinutes = (str: string) => {
+    let [h, m] = str.split(':').map(Number);
+    if (h >= 1 && h <= 4) h += 12; // Adjust afternoon classes
+    return h * 60 + m;
+  };
+
+  const startMin = parseToMinutes(startStr);
+  const endMin = parseToMinutes(endStr);
+  const currentMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+  if (currentMin >= endMin) return 'COMPLETED';
+  if (currentMin >= startMin && currentMin < endMin) return 'ONGOING';
+  return 'UPCOMING';
+};
+
+const SHORTCUT_METADATA: Record<string, {
+  title: string;
+  iconName: string;
+  route: string;
+  bg: string;
+}> = {
+  Attendance: { title: 'Attendance', iconName: 'CheckCircle', route: '/student/attendance', bg: Colors.BluePrimaryContainer },
+  Timetable: { title: 'Timetable', iconName: 'Calendar', route: '/student/schedule', bg: Colors.BluePrimaryContainer },
+  Performance: { title: 'Performance', iconName: 'TrendingUp', route: '/student/results', bg: Colors.BluePrimaryContainer },
+  Fees: { title: 'Fees', iconName: 'Wallet', route: '/student/fees', bg: Colors.BluePrimaryContainer },
+  Assignments: { title: 'Assignments', iconName: 'ClipboardList', route: '/student/assignments', bg: Colors.BluePrimaryContainer },
+  Library: { title: 'Library', iconName: 'BookOpen', route: '/student/library', bg: Colors.BluePrimaryContainer },
+  Placements: { title: 'Placements', iconName: 'Briefcase', route: '/student/placements', bg: Colors.BluePrimaryContainer },
+  Events: { title: 'Events', iconName: 'Megaphone', route: '/student/events', bg: Colors.BluePrimaryContainer },
+  Requests: { title: 'Requests', iconName: 'FileText', route: '/student/requests', bg: Colors.BluePrimaryContainer },
+  Announcements: { title: 'Announcements', iconName: 'Bell', route: '/student/alerts', bg: Colors.BluePrimaryContainer },
+};
+
+const renderShortcutIcon = (name: string, size = 26, color = Colors.BluePrimary) => {
+  switch (name) {
+    case 'CheckCircle': return <CheckCircle size={size} color={color} />;
+    case 'Calendar': return <Calendar size={size} color={color} />;
+    case 'TrendingUp': return <TrendingUp size={size} color={color} />;
+    case 'Wallet': return <Wallet size={size} color={color} />;
+    case 'ClipboardList': return <ClipboardList size={size} color={color} />;
+    case 'BookOpen': return <BookOpen size={size} color={color} />;
+    case 'Briefcase': return <Briefcase size={size} color={color} />;
+    case 'Megaphone': return <Megaphone size={size} color={color} />;
+    case 'FileText': return <FileText size={size} color={color} />;
+    case 'Bell': return <Bell size={size} color={color} />;
+    case 'Plus': return <Plus size={size} color={color} />;
+    default: return <Grid3X3 size={size} color={color} />;
+  }
+};
+
 export const DashboardScreen: React.FC = () => {
   const router = useRouter();
   const carouselRef = React.useRef<ScrollView>(null);
   const [activeSlide, setActiveSlide] = React.useState(0);
-  const [scrolled, setScrolled] = React.useState(false);
+  const [selectedAttendance, setSelectedAttendance] = React.useState<any | null>(null);
+  const [currentMinute, setCurrentMinute] = React.useState(new Date().getMinutes());
+  const [isCustomizingShortcuts, setIsCustomizingShortcuts] = React.useState(false);
+  const [tempShortcuts, setTempShortcuts] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentMinute(new Date().getMinutes());
+    }, 30000); // Sync every 30 seconds
+    return () => clearInterval(timer);
+  }, []);
+
+  const getProfessorForSubject = (subject: string) => {
+    switch (subject) {
+      case 'Operating System':
+        return 'Ms Sayeeda';
+      case 'Database Management System':
+        return 'Dr P Rizwan Ahmed';
+      case 'Data Mining and Warehousing':
+        return 'Dr A Zakiuddin Ahmed';
+      case 'Data Science':
+        return 'Mr Yaseen';
+      default:
+        return 'Academic Faculty';
+    }
+  };
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -84,7 +171,7 @@ export const DashboardScreen: React.FC = () => {
         x: nextIndex * CAROUSEL_WIDTH,
         animated: true,
       });
-    }, 5000);
+    }, 8000);
 
     return () => clearInterval(timer);
   }, [activeSlide]);
@@ -96,9 +183,37 @@ export const DashboardScreen: React.FC = () => {
     notificationCount,
     announcements,
     dailyAttendance,
+    quickAccessShortcuts,
+    setQuickAccessShortcuts,
   } = useCampusStore();
 
   if (!student) return null;
+
+  const handleOpenCustomizer = () => {
+    setTempShortcuts(quickAccessShortcuts);
+    setIsCustomizingShortcuts(true);
+  };
+
+  const toggleTempShortcut = (key: string) => {
+    if (tempShortcuts.includes(key)) {
+      setTempShortcuts(tempShortcuts.filter((s) => s !== key));
+    } else {
+      setTempShortcuts([...tempShortcuts, key]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    setTempShortcuts(Object.keys(SHORTCUT_METADATA));
+  };
+
+  const handleResetDefault = () => {
+    setTempShortcuts(['Attendance', 'Timetable', 'Performance', 'Fees', 'Assignments', 'Library']);
+  };
+
+  const handleSaveShortcuts = () => {
+    setQuickAccessShortcuts(tempShortcuts);
+    setIsCustomizingShortcuts(false);
+  };
 
   const firstName = student.name.split(' ')[0];
   const initial = student.name[0];
@@ -135,9 +250,20 @@ export const DashboardScreen: React.FC = () => {
 
   const todayDayKey = getTodayDayKey();
   const isWeekendDay = todayDayKey === 'Sun' || todayDayKey === 'Sat';
-  const todayClasses = mockTimetable[isWeekendDay ? 'Wed' : todayDayKey] || [];
-  const ongoingClass = todayClasses.find((cls) => cls.status === 'ONGOING');
-  const upcomingClasses = todayClasses.filter((cls) => cls.status === 'UPCOMING');
+
+  const todayClasses = React.useMemo(() => {
+    const rawClasses = mockTimetable[isWeekendDay ? 'Wed' : todayDayKey] || [];
+    return rawClasses.map((cls) => {
+      if (cls.isLunchBreak) return cls;
+      return {
+        ...cls,
+        status: getClassStatusRealtime(cls.time),
+      };
+    });
+  }, [todayDayKey, isWeekendDay, currentMinute]);
+
+  const ongoingClass = React.useMemo(() => todayClasses.find((cls) => cls.status === 'ONGOING'), [todayClasses]);
+  const upcomingClasses = React.useMemo(() => todayClasses.filter((cls) => cls.status === 'UPCOMING'), [todayClasses]);
 
   const getProgressColor = (pct: number) => {
     if (pct >= 75) return '#10B981'; // Green
@@ -188,57 +314,14 @@ export const DashboardScreen: React.FC = () => {
 
   return (
     <View style={styles.safeArea}>
-      {/* ── 1. Top Header (Clickable Profile Info + Bell) ── */}
+      {/* ── 1. Static Floating Header Card ── */}
       <View
         style={[
-          styles.fixedHeaderContainer,
-          scrolled
-            ? {
-              top: 0,
-              left: 0,
-              right: 0,
-              paddingTop: statusBarHeight + 12,
-              paddingBottom: 12,
-              paddingHorizontal: 16,
-              backgroundColor: '#FFFFFF',
-              borderBottomWidth: 1,
-              borderBottomColor: Colors.AppOutline,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              elevation: 4,
-            }
-            : {
-              top: statusBarHeight + 12,
-              left: 16,
-              right: 16,
-              backgroundColor: 'transparent',
-            },
+          styles.headerContainer,
+          { paddingTop: statusBarHeight + 12 },
         ]}
       >
-        <View
-          style={
-            scrolled
-              ? styles.header
-              : [
-                styles.header,
-                {
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: Colors.AppOutline,
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.04,
-                  shadowRadius: 3,
-                  elevation: 2,
-                },
-              ]
-          }
-        >
+        <View style={styles.headerCard}>
           <Pressable
             style={styles.headerLeft}
             onPress={() => router.push('/student/profile' as any)}
@@ -254,7 +337,7 @@ export const DashboardScreen: React.FC = () => {
           </Pressable>
           <Pressable
             style={styles.bellBtn}
-            onPress={() => router.push('/student/alerts' as any)}
+            onPress={() => router.push('/student/notifications' as any)}
           >
             <Bell size={22} color={Colors.AppOnBackground} />
             {notificationCount > 0 && <View style={styles.bellDot} />}
@@ -264,20 +347,8 @@ export const DashboardScreen: React.FC = () => {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: statusBarHeight + 112 },
-        ]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={(e) => {
-          const offsetY = e.nativeEvent.contentOffset.y;
-          if (offsetY > 10) {
-            setScrolled(true);
-          } else {
-            setScrolled(false);
-          }
-        }}
       >
 
         {/* ── 4. Workshop Banner (Horizontal Swipeable Carousel) ── */}
@@ -343,20 +414,22 @@ export const DashboardScreen: React.FC = () => {
             {dailyAttendance.slice(0, 5).map((item, index) => {
               const statusColor = getStatusColor(item.status);
               return (
-                <View
+                <Pressable
                   key={index}
-                  style={[
+                  onPress={() => setSelectedAttendance({ ...item, hourIndex: index + 1 })}
+                  style={({ pressed }) => [
                     styles.hourCircle,
                     {
                       backgroundColor: statusColor.bg,
                       borderColor: statusColor.border,
+                      opacity: pressed ? 0.8 : 1,
                     },
                   ]}
                 >
                   <Text style={[styles.hourText, { color: statusColor.text }]}>
                     {index + 1} hr
                   </Text>
-                </View>
+                </Pressable>
               );
             })}
           </View>
@@ -431,20 +504,37 @@ export const DashboardScreen: React.FC = () => {
         </CampusCard>
 
         {/* ── 5. Quick Access Grid ── */}
-        <SectionHeader title="Quick Access" />
+        <SectionHeader 
+          title="Quick Access" 
+          actionText="Edit"
+          onActionPress={handleOpenCustomizer}
+        />
         <View style={styles.quickGrid}>
-          <View style={styles.quickRow}>
-            <QuickActionButton title="Attendance" icon={<CheckCircle size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/student/attendance' as any)} />
-            <QuickActionButton title="Timetable" icon={<Calendar size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/student/schedule' as any)} />
-            <QuickActionButton title="Performance" icon={<TrendingUp size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/student/results' as any)} />
-            <QuickActionButton title="Fees" icon={<Wallet size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/student/fees' as any)} />
-
-          </View>
-          <View style={styles.quickRow}>
-            <QuickActionButton title="Exams" icon={<GraduationCap size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/student/exams' as any)} />
-            <QuickActionButton title="Circulars" icon={<Bell size={26} color={Colors.BluePrimary} />} iconBg={Colors.BluePrimaryContainer} onPress={() => router.push('/student/alerts' as any)} />
-            <View style={{ flex: 1 }} />
-            <View style={{ flex: 1 }} />
+          <View style={styles.quickWrap}>
+            {quickAccessShortcuts.map((key) => {
+              const meta = SHORTCUT_METADATA[key];
+              if (!meta) return null;
+              return (
+                <View key={key} style={styles.quickActionWrapper}>
+                  <QuickActionButton
+                    title={meta.title}
+                    icon={renderShortcutIcon(meta.iconName)}
+                    iconBg={meta.bg}
+                    onPress={() => router.push(meta.route as any)}
+                  />
+                </View>
+              );
+            })}
+            
+            {/* Trailing Add More Button */}
+            <View style={styles.quickActionWrapper}>
+              <QuickActionButton
+                title="Add More"
+                icon={renderShortcutIcon('Plus', 26, Colors.BluePrimary)}
+                iconBg="#F1F5F9"
+                onPress={handleOpenCustomizer}
+              />
+            </View>
           </View>
         </View>
 
@@ -554,6 +644,160 @@ export const DashboardScreen: React.FC = () => {
 
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* ── TODAY'S ATTENDANCE HOUR DETAILS MODAL ── */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={selectedAttendance !== null}
+        onRequestClose={() => setSelectedAttendance(null)}
+      >
+        <View style={styles.portalOverlay}>
+          <View style={styles.portalContent}>
+            {selectedAttendance && (
+              <View style={{ alignItems: 'center', width: '100%' }}>
+                <View
+                  style={[
+                    styles.modalIconBox,
+                    {
+                      backgroundColor:
+                        selectedAttendance.status === 'PRESENT'
+                          ? '#E6FBF3'
+                          : selectedAttendance.status === 'ABSENT'
+                          ? '#FEF2F2'
+                          : selectedAttendance.status === 'LATE'
+                          ? '#FFFBEB'
+                          : '#F1F5F9',
+                    },
+                  ]}
+                >
+                  {selectedAttendance.status === 'PRESENT' ? (
+                    <CheckCircle size={30} color="#10B981" />
+                  ) : selectedAttendance.status === 'ABSENT' ? (
+                    <XCircle size={30} color="#EF4444" />
+                  ) : selectedAttendance.status === 'LATE' ? (
+                    <Clock size={30} color="#F59E0B" />
+                  ) : (
+                    <AlertCircle size={30} color="#64748B" />
+                  )}
+                </View>
+
+                <Text style={styles.portalTitle}>Hour {selectedAttendance.hourIndex} Attendance</Text>
+                <Text style={styles.portalSubtitle}>{selectedAttendance.subject}</Text>
+
+                {/* Clean full-width details list */}
+                <View style={styles.gridContainer}>
+                  <View style={styles.gridItem}>
+                    <Text style={styles.gridLabel}>SUBJECT</Text>
+                    <Text style={styles.gridVal}>{selectedAttendance.subject}</Text>
+                  </View>
+                  
+                  <View style={styles.gridDividerLine} />
+                  
+                  <View style={styles.gridItem}>
+                    <Text style={styles.gridLabel}>MARKED BY</Text>
+                    <Text style={styles.gridVal}>{getProfessorForSubject(selectedAttendance.subject)}</Text>
+                  </View>
+                </View>
+
+                {/* Status Bar */}
+                <View style={styles.modalStatusRow}>
+                  <Text style={styles.modalStatusLabel}>ATTENDANCE STATUS</Text>
+                  <StatusChip
+                    text={selectedAttendance.status}
+                    level={
+                      selectedAttendance.status === 'PRESENT'
+                        ? 'SAFE'
+                        : selectedAttendance.status === 'ABSENT'
+                        ? 'LOW'
+                        : 'WARNING'
+                    }
+                  />
+                </View>
+
+                {/* Close Button */}
+                <Pressable
+                  style={[styles.portalBtn, styles.portalBtnPrimary, { width: '100%' }]}
+                  onPress={() => setSelectedAttendance(null)}
+                >
+                  <Text style={styles.portalBtnTextPrimary}>Dismiss Details</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── SHORTCUT CUSTOMIZER MODAL ── */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isCustomizingShortcuts}
+        onRequestClose={() => setIsCustomizingShortcuts(false)}
+      >
+        <View style={styles.portalOverlay}>
+          <View style={styles.customizerContent}>
+            <View style={styles.customizerHeader}>
+              <Text style={styles.customizerTitle}>Customize Shortcuts</Text>
+              <Text style={styles.customizerSubtitle}>Choose modules to display on your Home Screen</Text>
+            </View>
+
+            <View style={styles.quickActionsControlRow}>
+              <Pressable style={styles.controlLinkBtn} onPress={handleSelectAll}>
+                <Text style={styles.controlLinkText}>Select All</Text>
+              </Pressable>
+              <View style={styles.controlDivider} />
+              <Pressable style={styles.controlLinkBtn} onPress={handleResetDefault}>
+                <Text style={styles.controlLinkText}>Reset to Default</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.checklistScroll} showsVerticalScrollIndicator={false}>
+              {Object.keys(SHORTCUT_METADATA).map((key) => {
+                const meta = SHORTCUT_METADATA[key];
+                const checked = tempShortcuts.includes(key);
+                return (
+                  <Pressable
+                    key={key}
+                    style={styles.checkItemRow}
+                    onPress={() => toggleTempShortcut(key)}
+                  >
+                    <View style={styles.checkItemLeft}>
+                      <View style={[styles.miniIconBg, { backgroundColor: meta.bg }]}>
+                        {renderShortcutIcon(meta.iconName, 18, Colors.BluePrimary)}
+                      </View>
+                      <Text style={styles.checkItemLabel}>{meta.title}</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.checkboxCircle,
+                        checked ? styles.checkboxCircleChecked : styles.checkboxCircleUnchecked,
+                      ]}
+                    >
+                      {checked && <Check size={12} color="#FFFFFF" />}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.customizerFooter}>
+              <Pressable
+                style={[styles.customizerBtn, styles.customizerBtnCancel]}
+                onPress={() => setIsCustomizingShortcuts(false)}
+              >
+                <Text style={styles.customizerBtnCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.customizerBtn, styles.customizerBtnSave]}
+                onPress={handleSaveShortcuts}
+              >
+                <Text style={styles.customizerBtnSaveText}>Save Changes</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -561,12 +805,29 @@ export const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.AppBackground },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 16 },
-  fixedHeaderContainer: {
-    position: 'absolute',
+  content: { paddingHorizontal: 16, paddingTop: 16 },
+  headerContainer: {
+    backgroundColor: Colors.AppBackground,
+    paddingBottom: 6,
+    paddingHorizontal: 16,
     zIndex: 10,
   },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.AppOutline,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.BluePrimaryContainer, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 20, fontWeight: '700', color: Colors.BluePrimary },
@@ -637,8 +898,9 @@ const styles = StyleSheet.create({
   dotInactive: {
     backgroundColor: 'rgba(0,0,0,0.15)',
   },
-  quickGrid: { gap: 8, marginBottom: 8 },
-  quickRow: { flexDirection: 'row' },
+  quickGrid: { marginBottom: 12 },
+  quickWrap: { flexDirection: 'row', flexWrap: 'wrap', width: '100%' },
+  quickActionWrapper: { width: '25%', alignItems: 'center', marginBottom: 16 },
   classRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   classLeft: { flex: 1 },
   classSubject: { fontSize: 22, fontWeight: '700', marginTop: 8 },
@@ -747,5 +1009,214 @@ const styles = StyleSheet.create({
   hourText: {
     fontSize: 13,
     fontWeight: '700',
+  },
+
+  // Hour Detail Modal Styles
+  portalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  portalContent: {
+    width: '85%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    alignItems: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  portalTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B', textAlign: 'center', marginBottom: 4 },
+  portalSubtitle: { fontSize: 13, fontWeight: '600', color: Colors.BluePrimary, marginBottom: 16, textAlign: 'center' },
+  modalIconBox: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  
+  gridContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    width: '100%',
+    marginBottom: 12,
+  },
+  gridDividerLine: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 12,
+    width: '100%',
+  },
+  gridItem: {
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  gridLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  gridVal: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1E293B',
+    lineHeight: 18,
+  },
+  modalStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    width: '100%',
+    marginBottom: 18,
+  },
+  modalStatusLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  portalBtn: { height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  portalBtnPrimary: { backgroundColor: Colors.BluePrimary },
+  portalBtnTextPrimary: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+
+  // Customizer Modal Styles
+  customizerContent: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  customizerHeader: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  customizerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  customizerSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  quickActionsControlRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  controlLinkBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  controlLinkText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.BluePrimary,
+  },
+  controlDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: Colors.AppOutline,
+  },
+  checklistScroll: {
+    maxHeight: 320,
+    marginBottom: 16,
+  },
+  checkItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.AppOutline,
+  },
+  checkItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  miniIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkItemLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+  },
+  checkboxCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxCircleChecked: {
+    backgroundColor: Colors.BluePrimary,
+    borderColor: Colors.BluePrimary,
+  },
+  checkboxCircleUnchecked: {
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+  },
+  customizerFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  customizerBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customizerBtnCancel: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+  },
+  customizerBtnCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  customizerBtnSave: {
+    backgroundColor: Colors.BluePrimary,
+  },
+  customizerBtnSaveText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

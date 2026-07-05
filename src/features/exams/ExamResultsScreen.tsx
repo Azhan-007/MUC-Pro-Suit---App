@@ -7,11 +7,12 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../theme';
-import { Download, CheckCircle2 } from 'lucide-react-native';
+import { Download, CheckCircle2, BadgeCheck } from 'lucide-react-native';
 import { CampusCard, StatusChip, CustomButton, PageHeader } from '../../components';
 
 const EXAM_TYPES = ['CIA 1', 'CIA 2', 'Semester'] as const;
@@ -81,6 +82,19 @@ export const ExamResultsScreen: React.FC = () => {
   const [downloadingFull, setDownloadingFull] = useState<Record<string, boolean>>({});
   const [downloadedFull, setDownloadedFull] = useState<Record<string, boolean>>({});
 
+  // Custom Alert States
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'SUCCESS' | 'INFO';
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'INFO',
+  });
+
   React.useEffect(() => {
     if (type && EXAM_TYPES.includes(type)) {
       setSelectedResultType(type);
@@ -90,14 +104,24 @@ export const ExamResultsScreen: React.FC = () => {
   const handleDownloadFullReport = () => {
     const key = selectedResultType;
     if (downloadedFull[key]) {
-      Alert.alert('File Downloaded', `Opening ${key} Full Marksheet...`);
+      setAlertConfig({
+        visible: true,
+        title: 'File Downloaded',
+        message: `Opening ${key} Full Marksheet Report from local store...`,
+        type: 'INFO',
+      });
       return;
     }
     setDownloadingFull((prev) => ({ ...prev, [key]: true }));
     setTimeout(() => {
       setDownloadingFull((prev) => ({ ...prev, [key]: false }));
       setDownloadedFull((prev) => ({ ...prev, [key]: true }));
-      Alert.alert('Download Complete', `${key} Full Marksheet Report has been saved to your downloads.`);
+      setAlertConfig({
+        visible: true,
+        title: 'Download Complete',
+        message: `${key} Full Marksheet Report has been saved to your downloads.`,
+        type: 'SUCCESS',
+      });
     }, 2000);
   };
 
@@ -228,6 +252,42 @@ export const ExamResultsScreen: React.FC = () => {
 
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* ── CUSTOM ALERT MODAL ── */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={alertConfig.visible}
+        onRequestClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      >
+        <View style={styles.portalOverlay}>
+          <View style={styles.portalContent}>
+            <View
+              style={[
+                styles.modalIconBox,
+                {
+                  backgroundColor:
+                    alertConfig.type === 'SUCCESS' ? '#E6FBF3' : '#EFF6FF',
+                },
+              ]}
+            >
+              {alertConfig.type === 'SUCCESS' ? (
+                <BadgeCheck size={30} color="#10B981" />
+              ) : (
+                <CheckCircle2 size={30} color={Colors.BluePrimary} />
+              )}
+            </View>
+            <Text style={styles.portalTitle}>{alertConfig.title}</Text>
+            <Text style={styles.portalMessage}>{alertConfig.message}</Text>
+            <Pressable
+              style={[styles.portalBtn, styles.portalBtnPrimary, { width: '100%' }]}
+              onPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+            >
+              <Text style={styles.portalBtnTextPrimary}>OK</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -341,5 +401,65 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+
+  // Modal styles
+  portalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  portalContent: {
+    width: '85%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 20,
+    alignItems: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  portalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  portalMessage: {
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  portalBtn: {
+    height: 46,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  portalBtnPrimary: {
+    backgroundColor: Colors.BluePrimary,
+  },
+  portalBtnTextPrimary: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

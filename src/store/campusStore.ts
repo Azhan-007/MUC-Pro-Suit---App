@@ -50,9 +50,15 @@ interface CampusState {
   // Announcements
   announcements: Announcement[];
 
+  // Quick Access Shortcuts customization
+  quickAccessShortcuts: string[];
+
   // Actions
   setSelectedDay: (day: string) => void;
   setSelectedSemester: (semester: string) => void;
+  payOutstandingFees: (method: string) => void;
+  setNotificationCount: (count: number) => void;
+  setQuickAccessShortcuts: (shortcuts: string[]) => void;
 }
 
 export const useCampusStore = create<CampusState>((set) => ({
@@ -60,6 +66,7 @@ export const useCampusStore = create<CampusState>((set) => ({
   selectedDay: 'Wed',
   selectedSemester: 'Semester 4',
   notificationCount: 2,
+  quickAccessShortcuts: ['Attendance', 'Timetable', 'Performance', 'Fees', 'Assignments', 'Library'],
 
   attendanceOverview: mockAttendanceOverview,
   dailyAttendance: mockDailyAttendance,
@@ -82,4 +89,43 @@ export const useCampusStore = create<CampusState>((set) => ({
 
   setSelectedSemester: (semester) =>
     set({ selectedSemester: semester }),
+
+  setNotificationCount: (count) =>
+    set({ notificationCount: count }),
+
+  payOutstandingFees: (method) =>
+    set((state) => {
+      const paidAmount = state.feeSummary.paidAmount + state.feeSummary.outstandingAmount;
+      const outstandingAmount = 0;
+      const progressPercent = 1.0;
+      
+      const newTxn = {
+        receiptNumber: Math.floor(100000 + Math.random() * 900000).toString(),
+        date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        method: method || 'Online Payment',
+        amount: state.feeSummary.outstandingAmount,
+      };
+
+      const updatedFeeDetails = state.feeDetails.map(detail => ({
+        ...detail,
+        isPaid: true,
+        settledDateText: newTxn.date
+      }));
+
+      return {
+        feeSummary: {
+          ...state.feeSummary,
+          paidAmount,
+          outstandingAmount,
+          progressPercent,
+          lastPaymentDate: newTxn.date,
+          nextDueDate: 'Fully Settled',
+        },
+        feeDetails: updatedFeeDetails,
+        paymentTransactions: [newTxn, ...state.paymentTransactions],
+      };
+    }),
+
+  setQuickAccessShortcuts: (shortcuts) =>
+    set({ quickAccessShortcuts: shortcuts }),
 }));

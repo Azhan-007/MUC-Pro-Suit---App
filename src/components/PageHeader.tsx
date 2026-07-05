@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   rightContainer: {
-    width: 70,
+    minWidth: 70,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',

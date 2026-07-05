@@ -14,6 +14,13 @@ import {
   PaymentTransaction,
   Announcement,
   UpcomingEvent,
+  Assignment,
+  StudyMaterial,
+  BorrowedBook,
+  LibraryBook,
+  JobPosting,
+  CollegeEvent,
+  CertificateRequest,
 } from '../types';
 
 export const mockProfile: StudentProfile = {
@@ -222,3 +229,159 @@ export const mockUpcomingEvents: UpcomingEvent[] = [
   { title: 'AI Workshop', dateText: 'Nov 02', timeText: '10:00 AM', imageKey: 'ai_workshop' },
   { title: 'Music Fest 2026', dateText: 'Nov 10', timeText: '06:00 PM', imageKey: 'music_fest' },
 ];
+
+export const mockAssignments: Assignment[] = [
+  {
+    id: '1',
+    subjectName: 'Database Management System',
+    title: 'DBMS Assignment 1: Schema Design',
+    dueDate: 'Oct 10, 2026',
+    marks: '10 Marks',
+    status: 'GRADED',
+    grade: '9/10',
+    attachmentName: 'Schema_Design_Guidelines.pdf',
+    assignedDate: 'Oct 01, 2026',
+    professorName: 'Dr. P. Rizwan Ahmed',
+    description: 'Design a relational database schema for a University Management System. Ensure all tables are normalized up to 3NF (Third Normal Form). Create Entity-Relationship (ER) diagrams showing relationships and keys. Write SQL queries to create the schema and insert sample records.',
+    remarks: 'Excellent normalization and schema design. The ER diagram is very neat and clear. Good job!'
+  },
+  {
+    id: '2',
+    subjectName: 'Operating System',
+    title: 'OS Lab 2: CPU Scheduling Algorithms',
+    dueDate: 'Oct 28, 2026',
+    marks: '15 Marks',
+    status: 'PENDING',
+    attachmentName: 'Scheduling_Lab_Manual.pdf',
+    assignedDate: 'Oct 12, 2026',
+    professorName: 'Ms. Sayeeda',
+    description: 'Implement FCFS, SJF (Preemptive & Non-Preemptive), and Round Robin CPU scheduling algorithms. Calculate and compare the average waiting time and turnaround time for a given set of processes. Submit source code and execution graphs.',
+  },
+  {
+    id: '3',
+    subjectName: 'Data Science',
+    title: 'DS Assignment 2: Exploratory Data Analysis',
+    dueDate: 'Nov 05, 2026',
+    marks: '20 Marks',
+    status: 'PENDING',
+    attachmentName: 'EDA_Dataset_Description.pdf',
+    assignedDate: 'Oct 18, 2026',
+    professorName: 'Mr. Yaseen',
+    description: 'Perform Exploratory Data Analysis (EDA) on the provided dataset. Clean missing values, handle outliers using IQR method, create distribution plots, and visualize the correlation matrix using Seaborn heatmap. Document all insights.',
+  },
+  {
+    id: '4',
+    subjectName: 'Data Mining and Warehousing',
+    title: 'DMW Lab 1: Apriori Algorithm Implementation',
+    dueDate: 'Oct 22, 2026',
+    marks: '10 Marks',
+    status: 'SUBMITTED',
+    attachmentName: 'Apriori_Lab_Sheet.pdf',
+    assignedDate: 'Oct 08, 2026',
+    professorName: 'Dr. A. Zakiuddin Ahmed',
+    description: 'Implement the Apriori algorithm for mining frequent itemsets and association rules. Analyze the performance of the algorithm with varying support and confidence thresholds. Submit runtime performance plots.',
+    remarks: 'Apriori implementation runs correctly. Evaluation is in progress.'
+  }
+];
+
+export const mockStudyMaterials: StudyMaterial[] = [
+  {
+    id: '1',
+    subjectName: 'Database Management System',
+    title: 'DBMS Unit 1 Lecture Notes: Intro to RDBMS',
+    fileType: 'PDF',
+    fileSize: '2.4 MB',
+    uploadedDate: 'Oct 02, 2026',
+    unit: 'Unit 1',
+    professor: 'Dr. P. Rizwan Ahmed',
+    description: 'Introduction to Database Management Systems, Relational Model, Database Schemas, Keys (Primary, Candidate, Foreign Keys), and relational integrity constraints.'
+  },
+  {
+    id: '2',
+    subjectName: 'Database Management System',
+    title: 'DBMS Unit 2: SQL Joins and Subqueries Cheat Sheet',
+    fileType: 'PDF',
+    fileSize: '1.8 MB',
+    uploadedDate: 'Oct 05, 2026',
+    unit: 'Unit 2',
+    professor: 'Dr. P. Rizwan Ahmed',
+    description: 'Quick reference sheet for SQL commands focusing on Inner Joins, Left/Right Outer Joins, Full Joins, nested subqueries, and grouping aggregates (GROUP BY, HAVING).'
+  },
+  {
+    id: '3',
+    subjectName: 'Operating System',
+    title: 'OS Lecture Slides: Process Synchronization & Semaphores',
+    fileType: 'PPTX',
+    fileSize: '4.2 MB',
+    uploadedDate: 'Oct 12, 2026',
+    unit: 'Unit 2',
+    professor: 'Ms. Sayeeda',
+    description: 'Slides on Critical Section problem, process synchronization primitives, Semaphores (Counting & Binary), Mutexes, and classic synchronization problems like Producer-Consumer and Dining Philosophers.'
+  },
+  {
+    id: '4',
+    subjectName: 'Operating System',
+    title: 'OS Unit 3 Notes: Deadlock Avoidance and Banker\'s Algorithm',
+    fileType: 'PDF',
+    fileSize: '3.1 MB',
+    uploadedDate: 'Oct 15, 2026',
+    unit: 'Unit 3',
+    professor: 'Ms. Sayeeda',
+    description: 'Detailed study notes covering Deadlocks characterization, Resource Allocation Graphs, Deadlock Prevention techniques, and Banker\'s Algorithm for Deadlock Avoidance with solved examples.'
+  },
+  {
+    id: '5',
+    subjectName: 'Data Science',
+    title: 'DS Python for Data Analysis: NumPy & Pandas Slides',
+    fileType: 'PPTX',
+    fileSize: '6.7 MB',
+    uploadedDate: 'Oct 18, 2026',
+    unit: 'Unit 1',
+    professor: 'Mr. Yaseen',
+    description: 'Introductory python slides focusing on core libraries: NumPy array manipulation, linear algebra operations, Pandas Series, DataFrames, data ingestion, filtering, and wrangling.'
+  },
+  {
+    id: '6',
+    subjectName: 'Data Mining and Warehousing',
+    title: 'DMW Unit 1: Data Preprocessing Techniques Guide',
+    fileType: 'PDF',
+    fileSize: '2.9 MB',
+    uploadedDate: 'Oct 20, 2026',
+    unit: 'Unit 1',
+    professor: 'Dr. A. Zakiuddin Ahmed',
+    description: 'Detailed study guide for data cleaning (handling missing values, noisy data), data integration, data reduction, data transformation (normalization, discretization), and data quality metrics.'
+  }
+];
+
+export const mockBorrowedBooks: BorrowedBook[] = [
+  { id: 'LIB-3021', title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', borrowDate: 'Oct 10, 2026', dueDate: 'Oct 25, 2026', daysLeft: 23, status: 'SAFE' },
+  { id: 'LIB-4098', title: 'Database System Concepts', author: 'Abraham Silberschatz', borrowDate: 'Oct 12, 2026', dueDate: 'Oct 27, 2026', daysLeft: 25, status: 'SAFE' }
+];
+
+export const mockLibraryCatalog: LibraryBook[] = [
+  { id: 'CAT-101', title: 'Software Engineering: A Practitioner\'s Approach', author: 'Roger S. Pressman', copiesAvailable: 8, isAvailable: true },
+  { id: 'CAT-102', title: 'Operating System Concepts', author: 'Abraham Silberschatz', copiesAvailable: 3, isAvailable: true },
+  { id: 'CAT-103', title: 'Compilers: Principles, Techniques, and Tools', author: 'Alfred V. Aho', copiesAvailable: 0, isAvailable: false },
+  { id: 'CAT-104', title: 'Computer Networks', author: 'Andrew S. Tanenbaum', copiesAvailable: 5, isAvailable: true },
+  { id: 'CAT-105', title: 'Artificial Intelligence: A Modern Approach', author: 'Stuart Russell', copiesAvailable: 2, isAvailable: true }
+];
+
+export const mockJobPostings: JobPosting[] = [
+  { id: 'JOB-001', companyName: 'Google', role: 'Software Engineering Intern (Summer 2027)', packageText: '₹1.2 Lakhs/month', location: 'Bangalore, India', eligibility: 'CGPA >= 8.0, B.Sc CS / BCA / B.Tech', deadline: 'Oct 31, 2026', status: 'APPLY' },
+  { id: 'JOB-002', companyName: 'Zoho Corporation', role: 'Associate Software Developer', packageText: '₹7.5 LPA', location: 'Chennai, India', eligibility: 'CGPA >= 7.0, No active backlogs', deadline: 'Nov 15, 2026', status: 'APPLY' },
+  { id: 'JOB-003', companyName: 'Infosys', role: 'Systems Engineer Specialist', packageText: '₹6.2 LPA', location: 'Mysore, India', eligibility: 'CGPA >= 6.0, Open to all IT branches', deadline: 'Nov 20, 2026', status: 'APPLIED' },
+  { id: 'JOB-004', companyName: 'Tata Consultancy Services (TCS)', role: 'Ninja/Digital Developer', packageText: '₹3.6 - ₹7.0 LPA', location: 'Pune, India', eligibility: 'CGPA >= 6.5, All streams', deadline: 'Oct 25, 2026', status: 'NOT_ELIGIBLE' }
+];
+
+export const mockCollegeEvents: CollegeEvent[] = [
+  { id: 'EVT-101', title: 'Inter-Collegiate Coding Hackathon 2026', dateText: 'Nov 02', timeText: '09:00 AM', venue: 'Main Computer Lab', category: 'TECHNICAL', isRegistered: false },
+  { id: 'EVT-102', title: 'Annual Cultural Fest - MUC FEST \'26', dateText: 'Nov 12', timeText: '04:00 PM', venue: 'College Grounds & Auditorium', category: 'CULTURAL', isRegistered: true },
+  { id: 'EVT-103', title: 'Inter-Departmental Cricket Tournament', dateText: 'Nov 15', timeText: '08:30 AM', venue: 'Sports Arena', category: 'SPORTS', isRegistered: false },
+  { id: 'EVT-104', title: 'Workshop on Cyber Security & Ethical Hacking', dateText: 'Oct 29', timeText: '10:30 AM', venue: 'Seminar Hall B', category: 'TECHNICAL', isRegistered: false }
+];
+
+export const mockCertificateRequests: CertificateRequest[] = [
+  { id: 'REQ-2810', certificateType: 'Bonafide Certificate', reason: 'For applying to State Scholarship Portal', submittedDate: 'Oct 20, 2026', status: 'ISSUED', downloadUrl: 'https://mucollege.edu.in/certificates/sample.pdf' },
+  { id: 'REQ-2940', certificateType: 'Attendance Certificate', reason: 'For attending regional sports tournament', submittedDate: 'Oct 26, 2026', status: 'PENDING' }
+];
+

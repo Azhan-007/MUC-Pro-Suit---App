@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Calendar, CheckCircle, Bell, User } from 'lucide-react-native';
+import { Home, Calendar, CheckCircle, Menu, User } from 'lucide-react-native';
 import { Colors } from '../../../src/theme';
 
 interface TabBarItemProps {
@@ -36,7 +36,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     index: { label: 'Home', icon: (focused: boolean) => <Home size={22} color={focused ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
     schedule: { label: 'Schedule', icon: (focused: boolean) => <Calendar size={22} color={focused ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
     attendance: { label: 'Attendance', icon: (focused: boolean) => <CheckCircle size={22} color={focused ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
-    alerts: { label: 'Circulars', icon: (focused: boolean) => <Bell size={22} color={focused ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
+    menu: { label: 'Menu', icon: (focused: boolean) => <Menu size={22} color={focused ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
     profile: { label: 'Profile', icon: (focused: boolean) => <User size={22} color={focused ? Colors.BluePrimary : Colors.AppOnSurfaceVariant} /> },
   };
 
@@ -85,8 +85,8 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="schedule" options={{ href: null }} />
+      <Tabs.Screen name="menu" />
       <Tabs.Screen name="attendance" />
-      <Tabs.Screen name="alerts" />
       <Tabs.Screen name="profile" />
     </Tabs>
   );

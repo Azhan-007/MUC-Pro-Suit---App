@@ -220,3 +220,83 @@ export interface UpcomingEvent {
   timeText: string;
   imageKey: string;
 }
+
+// ─────────────────────────────────────────────
+// New Features Domain Types
+// ─────────────────────────────────────────────
+
+export interface Assignment {
+  id: string;
+  subjectName: string;
+  title: string;
+  dueDate: string;
+  marks: string;
+  status: 'PENDING' | 'SUBMITTED' | 'GRADED';
+  grade?: string;
+  attachmentName?: string;
+  description?: string;
+  assignedDate?: string;
+  professorName?: string;
+  remarks?: string;
+}
+
+export interface StudyMaterial {
+  id: string;
+  subjectName: string;
+  title: string;
+  fileType: 'PDF' | 'PPTX' | 'DOCX' | 'PPT' | string;
+  fileSize: string;
+  uploadedDate: string;
+  unit?: string;
+  professor?: string;
+  description?: string;
+}
+
+export interface BorrowedBook {
+  id: string;
+  title: string;
+  author: string;
+  borrowDate: string;
+  dueDate: string;
+  daysLeft: number;
+  status: 'SAFE' | 'OVERDUE';
+}
+
+export interface LibraryBook {
+  id: string;
+  title: string;
+  author: string;
+  copiesAvailable: number;
+  isAvailable: boolean;
+}
+
+export interface JobPosting {
+  id: string;
+  companyName: string;
+  role: string;
+  packageText: string;
+  location: string;
+  eligibility: string;
+  deadline: string;
+  status: 'APPLY' | 'APPLIED' | 'SHORTLISTED' | 'NOT_ELIGIBLE';
+}
+
+export interface CollegeEvent {
+  id: string;
+  title: string;
+  dateText: string;
+  timeText: string;
+  venue: string;
+  category: 'TECHNICAL' | 'CULTURAL' | 'SPORTS';
+  isRegistered: boolean;
+}
+
+export interface CertificateRequest {
+  id: string;
+  certificateType: string;
+  reason: string;
+  submittedDate: string;
+  status: 'PENDING' | 'APPROVED' | 'ISSUED' | 'REJECTED';
+  downloadUrl?: string;
+}
+

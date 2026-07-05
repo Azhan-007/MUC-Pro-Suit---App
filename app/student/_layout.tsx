@@ -19,6 +19,15 @@ export default function StudentLayout() {
       <Stack.Screen name="fees" options={{ headerShown: false }} />
       <Stack.Screen name="exams" options={{ headerShown: false }} />
       <Stack.Screen name="exam-results" options={{ headerShown: false }} />
+      <Stack.Screen name="assignments" options={{ headerShown: false }} />
+      <Stack.Screen name="study-materials" options={{ headerShown: false }} />
+      <Stack.Screen name="library" options={{ headerShown: false }} />
+      <Stack.Screen name="placements" options={{ headerShown: false }} />
+      <Stack.Screen name="events" options={{ headerShown: false }} />
+      <Stack.Screen name="requests" options={{ headerShown: false }} />
+      <Stack.Screen name="alerts" options={{ headerShown: false }} />
+      <Stack.Screen name="assignment-details" options={{ headerShown: false }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
     </Stack>
   );
 }

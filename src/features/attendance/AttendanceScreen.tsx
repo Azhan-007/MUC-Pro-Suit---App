@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   Pressable,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,15 +19,16 @@ import {
 } from '../../components';
 import { Colors } from '../../theme';
 import {
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  Flame,
+  Filter,
   Check,
   X,
   Clock,
   AlertCircle,
   CircleOff,
-  CheckCircle,
-  XCircle,
-  TrendingUp,
-  Flame,
 } from 'lucide-react-native';
 
 // ── Status Mini Icons ──
@@ -86,14 +88,124 @@ const hourlyMatrixData = [
   { day: '30-Tue', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PENDING'] },
 ];
 
+// ── Semester Mock Data ──
+const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6'];
+
+const mockDataPerSemester: Record<string, {
+  overview: {
+    totalAttendedClasses: number;
+    missedClasses: number;
+    classesTo75Percent: number;
+    currentStreak: number;
+    overallPercent: number;
+  };
+  subjects: Array<{
+    subjectName: string;
+    facultyName?: string;
+    fraction: string;
+    percentage: number;
+    statusLevel: 'SAFE' | 'WARNING' | 'LOW';
+  }>;
+}> = {
+  'Semester 1': {
+    overview: { totalAttendedClasses: 140, missedClasses: 10, classesTo75Percent: 0, currentStreak: 8, overallPercent: 93 },
+    subjects: [
+      { subjectName: 'Technical English', facultyName: 'Dr. John Doe', fraction: '45/48 Hrs', percentage: 93, statusLevel: 'SAFE' },
+      { subjectName: 'Mathematics I', facultyName: 'Prof. Mary Ann', fraction: '48/52 Hrs', percentage: 92, statusLevel: 'SAFE' },
+      { subjectName: 'Engineering Physics', facultyName: 'Dr. Albert E.', fraction: '47/50 Hrs', percentage: 94, statusLevel: 'SAFE' },
+    ]
+  },
+  'Semester 2': {
+    overview: { totalAttendedClasses: 132, missedClasses: 18, classesTo75Percent: 0, currentStreak: 4, overallPercent: 88 },
+    subjects: [
+      { subjectName: 'Mathematics II', facultyName: 'Prof. Mary Ann', fraction: '42/50 Hrs', percentage: 84, statusLevel: 'SAFE' },
+      { subjectName: 'Applied Chemistry', facultyName: 'Dr. Curie', fraction: '46/50 Hrs', percentage: 92, statusLevel: 'SAFE' },
+      { subjectName: 'Programming in C', facultyName: 'Prof. Dennis Ritchie', fraction: '44/50 Hrs', percentage: 88, statusLevel: 'SAFE' },
+    ]
+  },
+  'Semester 3': {
+    overview: { totalAttendedClasses: 120, missedClasses: 25, classesTo75Percent: 0, currentStreak: 6, overallPercent: 82 },
+    subjects: [
+      { subjectName: 'Data Structures', facultyName: 'Prof. Knuth', fraction: '38/48 Hrs', percentage: 79, statusLevel: 'WARNING' },
+      { subjectName: 'Discrete Mathematics', facultyName: 'Prof. Cantor', fraction: '42/50 Hrs', percentage: 84, statusLevel: 'SAFE' },
+      { subjectName: 'Digital Logic Circuits', facultyName: 'Dr. Claude Shannon', fraction: '40/50 Hrs', percentage: 80, statusLevel: 'SAFE' },
+    ]
+  },
+  'Semester 4': {
+    overview: { totalAttendedClasses: 125, missedClasses: 30, classesTo75Percent: 2, currentStreak: 5, overallPercent: 80 },
+    subjects: [
+      { subjectName: 'Operating Systems', facultyName: 'Prof. Linus T.', fraction: '38/50 Hrs', percentage: 76, statusLevel: 'WARNING' },
+      { subjectName: 'Object Oriented Programming', facultyName: 'Prof. Bjarne S.', fraction: '45/50 Hrs', percentage: 90, statusLevel: 'SAFE' },
+      { subjectName: 'Database Management Systems', facultyName: 'Dr. E.F. Codd', fraction: '42/50 Hrs', percentage: 84, statusLevel: 'SAFE' },
+    ]
+  },
+  'Semester 5': {
+    overview: { totalAttendedClasses: 112, missedClasses: 21, classesTo75Percent: 0, currentStreak: 7, overallPercent: 84 },
+    subjects: [
+      { subjectName: 'Computer Networks', facultyName: 'Prof. Tanenbaum', fraction: '42/50 Hrs', percentage: 84, statusLevel: 'SAFE' },
+      { subjectName: 'Software Engineering', facultyName: 'Prof. Pressman', fraction: '35/50 Hrs', percentage: 70, statusLevel: 'LOW' },
+      { subjectName: 'Web Technology', facultyName: 'Prof. Tim Berners-Lee', fraction: '35/40 Hrs', percentage: 87, statusLevel: 'SAFE' },
+    ]
+  },
+  'Semester 6': {
+    overview: { totalAttendedClasses: 115, missedClasses: 15, classesTo75Percent: 0, currentStreak: 9, overallPercent: 88 },
+    subjects: [
+      { subjectName: 'Artificial Intelligence', facultyName: 'Prof. McCarthy', fraction: '38/44 Hrs', percentage: 86, statusLevel: 'SAFE' },
+      { subjectName: 'Cloud Computing', facultyName: 'Dr. Werner Vogels', fraction: '40/46 Hrs', percentage: 86, statusLevel: 'SAFE' },
+      { subjectName: 'Mobile App Development', facultyName: 'Prof. Andy Rubin', fraction: '37/43 Hrs', percentage: 86, statusLevel: 'SAFE' },
+    ]
+  }
+};
+
 export const AttendanceScreen: React.FC = () => {
   const router = useRouter();
-  const { attendanceOverview, subjectAttendanceList } = useCampusStore();
   const [activeTab, setActiveTab] = React.useState<'COURSE' | 'HOURLY' | 'TERMLY'>('HOURLY');
+  
+  // Semester selector filter states
+  const [selectedSemester, setSelectedSemester] = useState('Semester 5');
+  const [showSemDropdown, setShowSemDropdown] = useState(false);
+
+  // Hourly attendance details modal states
+  const [selectedHourDetails, setSelectedHourDetails] = useState<any | null>(null);
+
+  const handleHourPress = (day: string, hourIndex: number, status: string) => {
+    // Map hourIndex to simulated subject details
+    const subjectMap: Record<number, { subject: string; prof: string; time: string; room: string }> = {
+      1: { subject: 'Operating System', prof: 'Ms Sayeeda', time: '09:00 AM - 10:00 AM', room: 'Room 402' },
+      2: { subject: 'Database Management System', prof: 'Dr P Rizwan Ahmed', time: '10:00 AM - 11:00 AM', room: 'Lab 01' },
+      3: { subject: 'Data Mining and Warehousing', prof: 'Dr A Zakiuddin Ahmed', time: '11:30 AM - 12:30 PM', room: 'Room 201' },
+      4: { subject: 'Data Science', prof: 'Mr Yaseen', time: '01:30 PM - 02:30 PM', room: 'Lab 03' },
+      5: { subject: 'Mobile App Development', prof: 'Prof. Andy Rubin', time: '02:30 PM - 03:30 PM', room: 'Room 304' },
+    };
+
+    const details = subjectMap[hourIndex] || subjectMap[1];
+
+    setSelectedHourDetails({
+      day,
+      hourIndex,
+      status,
+      subject: details.subject,
+      prof: details.prof,
+      time: details.time,
+      room: details.room,
+    });
+  };
+
+  const currentData = mockDataPerSemester[selectedSemester] || mockDataPerSemester['Semester 5'];
+
+  const renderFilterButton = () => (
+    <Pressable
+      onPress={() => setShowSemDropdown(true)}
+      style={styles.filterBtn}
+    >
+      <Filter size={13} color={Colors.BluePrimary} style={{ marginRight: 4 }} />
+      <Text style={styles.filterText}>{selectedSemester.replace('Semester', 'Sem')}</Text>
+    </Pressable>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <PageHeader title="Attendance" />
+      <PageHeader title="Attendance" rightElement={renderFilterButton()} />
 
       {/* Tab Switcher */}
       <View style={styles.tabBar}>
@@ -127,13 +239,13 @@ export const AttendanceScreen: React.FC = () => {
             <View style={styles.insightGrid}>
               <View style={styles.insightRow}>
                 <InsightCard
-                  value={String(attendanceOverview.totalAttendedClasses)}
+                  value={String(currentData.overview.totalAttendedClasses)}
                   label="Total Attended"
                   icon={<CheckCircle size={18} color={Colors.BluePrimary} />}
                   iconBg={Colors.BluePrimaryContainer + '66'}
                 />
                 <InsightCard
-                  value={String(attendanceOverview.missedClasses)}
+                  value={String(currentData.overview.missedClasses)}
                   label="Missed Classes"
                   icon={<XCircle size={18} color={Colors.RedError} />}
                   iconBg={Colors.RedErrorContainer}
@@ -141,13 +253,13 @@ export const AttendanceScreen: React.FC = () => {
               </View>
               <View style={[styles.insightRow, { marginTop: 8 }]}>
                 <InsightCard
-                  value={String(attendanceOverview.classesTo75Percent)}
+                  value={String(currentData.overview.classesTo75Percent)}
                   label="Classes to 75%"
                   icon={<TrendingUp size={18} color={Colors.TealTertiary} />}
                   iconBg={Colors.TealTertiaryContainer}
                 />
                 <InsightCard
-                  value={String(attendanceOverview.currentStreak)}
+                  value={String(currentData.overview.currentStreak)}
                   label="Current Streak"
                   icon={<Flame size={18} color={Colors.ColorPending} />}
                   iconBg={Colors.ColorPending + '1F'}
@@ -156,7 +268,7 @@ export const AttendanceScreen: React.FC = () => {
             </View>
 
             {/* Course-wise Analytics */}
-            {subjectAttendanceList.map((subject, idx) => {
+            {currentData.subjects.map((subject, idx) => {
               const color =
                 subject.statusLevel === 'SAFE'
                   ? Colors.ColorPresent
@@ -225,7 +337,12 @@ export const AttendanceScreen: React.FC = () => {
                 ))}
               </View>
 
-              <ScrollView style={{ maxHeight: 336 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+              <ScrollView 
+                style={{ height: 380 }} 
+                contentContainerStyle={{ paddingBottom: 4 }}
+                nestedScrollEnabled={true} 
+                showsVerticalScrollIndicator={true}
+              >
                 {hourlyMatrixData.map((row, rIdx) => (
                   <View
                     key={row.day}
@@ -236,7 +353,11 @@ export const AttendanceScreen: React.FC = () => {
                   >
                     <Text style={styles.tableRowLabel}>{row.day}</Text>
                     {row.hours.map((status, hIdx) => (
-                      <View key={hIdx} style={styles.statusCell}>
+                      <Pressable
+                        key={hIdx}
+                        style={styles.statusCell}
+                        onPress={() => handleHourPress(row.day, hIdx + 1, status)}
+                      >
                         {status === 'PRESENT' ? (
                           <PresentIcon />
                         ) : status === 'ABSENT' ? (
@@ -248,7 +369,7 @@ export const AttendanceScreen: React.FC = () => {
                         ) : (
                           <UnmarkedIcon />
                         )}
-                      </View>
+                      </Pressable>
                     ))}
                   </View>
                 ))}
@@ -338,6 +459,119 @@ export const AttendanceScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* ── SEMESTER SELECTOR MODAL ── */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showSemDropdown}
+        onRequestClose={() => setShowSemDropdown(false)}
+      >
+        <Pressable style={styles.dropdownOverlay} onPress={() => setShowSemDropdown(false)}>
+          <View style={styles.dropdownCard}>
+            <Text style={styles.dropdownTitle}>Select Semester</Text>
+            {SEMESTERS.map((sem) => {
+              const active = sem === selectedSemester;
+              return (
+                <Pressable
+                  key={sem}
+                  onPress={() => {
+                    setSelectedSemester(sem);
+                    setShowSemDropdown(false);
+                  }}
+                  style={[styles.dropdownOption, active && styles.dropdownOptionActive]}
+                >
+                  <Text style={[styles.optionText, active && styles.optionTextActive]}>{sem}</Text>
+                  {active && <CheckCircle size={14} color={Colors.BluePrimary} />}
+                </Pressable>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* ── HOURLY ATTENDANCE HOUR DETAILS MODAL ── */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={selectedHourDetails !== null}
+        onRequestClose={() => setSelectedHourDetails(null)}
+      >
+        <View style={styles.portalOverlay}>
+          <View style={styles.portalContent}>
+            {selectedHourDetails && (
+              <View style={{ alignItems: 'center', width: '100%' }}>
+                <View
+                  style={[
+                    styles.modalIconBox,
+                    {
+                      backgroundColor:
+                        selectedHourDetails.status === 'PRESENT'
+                          ? '#E6FBF3'
+                          : selectedHourDetails.status === 'ABSENT'
+                          ? '#FEF2F2'
+                          : selectedHourDetails.status === 'LATE'
+                          ? '#FFFBEB'
+                          : '#F1F5F9',
+                    },
+                  ]}
+                >
+                  {selectedHourDetails.status === 'PRESENT' ? (
+                    <CheckCircle size={30} color="#10B981" />
+                  ) : selectedHourDetails.status === 'ABSENT' ? (
+                    <XCircle size={30} color="#EF4444" />
+                  ) : selectedHourDetails.status === 'LATE' ? (
+                    <Clock size={30} color="#F59E0B" />
+                  ) : (
+                    <AlertCircle size={30} color="#64748B" />
+                  )}
+                </View>
+
+                <Text style={styles.portalTitle}>Hour {selectedHourDetails.hourIndex} Attendance</Text>
+                <Text style={styles.portalSubtitle}>{selectedHourDetails.day} • {selectedHourDetails.subject}</Text>
+
+                {/* Clean full-width details list */}
+                <View style={styles.gridContainer}>
+                  <View style={styles.gridItem}>
+                    <Text style={styles.gridLabel}>SUBJECT</Text>
+                    <Text style={styles.gridVal}>{selectedHourDetails.subject}</Text>
+                  </View>
+                  
+                  <View style={styles.gridDividerLine} />
+                  
+                  <View style={styles.gridItem}>
+                    <Text style={styles.gridLabel}>MARKED BY</Text>
+                    <Text style={styles.gridVal}>{selectedHourDetails.prof}</Text>
+                  </View>
+                </View>
+
+                {/* Status Bar */}
+                <View style={styles.modalStatusRow}>
+                  <Text style={styles.modalStatusLabel}>ATTENDANCE STATUS</Text>
+                  <StatusChip
+                    text={selectedHourDetails.status}
+                    level={
+                      selectedHourDetails.status === 'PRESENT'
+                        ? 'SAFE'
+                        : selectedHourDetails.status === 'ABSENT'
+                        ? 'LOW'
+                        : 'WARNING'
+                    }
+                  />
+                </View>
+
+                {/* Close Button */}
+                <Pressable
+                  style={[styles.portalBtn, styles.portalBtnPrimary, { width: '100%' }]}
+                  onPress={() => setSelectedHourDetails(null)}
+                >
+                  <Text style={styles.portalBtnTextPrimary}>Dismiss Details</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -416,6 +650,7 @@ const styles = StyleSheet.create({
   matrixCard: {
     marginHorizontal: 16,
     padding: 0,
+    paddingBottom: 8,
     overflow: 'hidden',
     marginBottom: 16,
     backgroundColor: '#FFFFFF',
@@ -438,7 +673,7 @@ const styles = StyleSheet.create({
   tableBodyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 7,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.AppOutline,
@@ -556,5 +791,150 @@ const styles = StyleSheet.create({
     width: 1,
     height: 18,
     backgroundColor: Colors.AppOutline,
+  },
+
+  // Semester Filter Styles
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9', // Slate-100
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    marginRight: 6,
+  },
+  filterText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.BluePrimary,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownCard: {
+    width: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  dropdownTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 14,
+    textAlign: 'center',
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginVertical: 3,
+  },
+  dropdownOptionActive: {
+    backgroundColor: '#F0F9FF', // Sky-50
+  },
+  optionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  optionTextActive: {
+    color: Colors.BluePrimary,
+    fontWeight: '700',
+  },
+
+  // Modal Overlays
+  portalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  portalContent: {
+    width: '85%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    alignItems: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  portalTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B', textAlign: 'center', marginBottom: 4 },
+  portalSubtitle: { fontSize: 13, fontWeight: '600', color: Colors.BluePrimary, marginBottom: 16, textAlign: 'center' },
+  modalIconBox: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  portalBtn: { height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  portalBtnPrimary: { backgroundColor: Colors.BluePrimary },
+  portalBtnTextPrimary: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+
+  // Grid details styles
+  gridContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    width: '100%',
+    marginBottom: 12,
+  },
+  gridDividerLine: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 12,
+    width: '100%',
+  },
+  gridItem: {
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  gridLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  gridVal: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1E293B',
+    lineHeight: 18,
+  },
+  modalStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    width: '100%',
+    marginBottom: 18,
+  },
+  modalStatusLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.5,
   },
 });
