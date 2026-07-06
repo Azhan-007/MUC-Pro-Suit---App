@@ -1,4 +1,89 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Component, ErrorInfo } from 'react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+
+// ============================================================
+// STEP 1: Global error handler - catches ANY uncaught JS error
+// and forces the splash screen to hide so we can see the error
+// ============================================================
+let globalError: string | null = null;
+
+try {
+  if (typeof ErrorUtils !== 'undefined') {
+    const originalHandler = ErrorUtils.getGlobalHandler();
+    ErrorUtils.setGlobalHandler((error: any, isFatal?: boolean) => {
+      globalError = `[${isFatal ? 'FATAL' : 'ERROR'}] ${error?.message || String(error)}\n${error?.stack || ''}`;
+      // Try to hide splash screen on any error
+      try {
+        const SplashMod = require('expo-splash-screen');
+        SplashMod.hideAsync?.();
+      } catch (_) {}
+      // Call original handler
+      if (originalHandler) originalHandler(error, isFatal);
+    });
+  }
+} catch (_) {}
+
+// ============================================================
+// STEP 2: Error Boundary - catches React render errors
+// Shows red screen with error details instead of splash freeze
+// ============================================================
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: string;
+}
+
+class AppErrorBoundary extends Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: '' };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return {
+      hasError: true,
+      error: `${error.name}: ${error.message}\n\n${error.stack || 'No stack trace'}`,
+    };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Force hide splash screen when error is caught
+    try {
+      const SplashMod = require('expo-splash-screen');
+      SplashMod.hideAsync?.();
+    } catch (_) {}
+  }
+
+  render() {
+    if (this.state.hasError || globalError) {
+      const errorText = this.state.error || globalError || 'Unknown error';
+      return (
+        <View style={errorStyles.container}>
+          <ScrollView style={errorStyles.scroll} contentContainerStyle={errorStyles.scrollContent}>
+            <Text style={errorStyles.title}>⚠️ App Crash Detected</Text>
+            <Text style={errorStyles.subtitle}>
+              The app crashed during startup. Share this screen with the developer:
+            </Text>
+            <Text style={errorStyles.errorText}>{errorText}</Text>
+          </ScrollView>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const errorStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#1a0000', paddingTop: 60 },
+  scroll: { flex: 1 },
+  scrollContent: { padding: 20 },
+  title: { color: '#ff4444', fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
+  subtitle: { color: '#ffaaaa', fontSize: 14, marginBottom: 20 },
+  errorText: { color: '#ffffff', fontSize: 12, fontFamily: 'monospace', lineHeight: 18 },
+});
+
+// ============================================================
+// STEP 3: Import everything AFTER error handlers are set up
+// ============================================================
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
@@ -15,10 +100,10 @@ import {
 } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../src/store/authStore';
-
 import { CampusAlertProvider } from '../src/components';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// Prevent auto hide - wrapped in try/catch
+try { SplashScreen.preventAutoHideAsync(); } catch (_) {}
 
 const queryClient = new QueryClient();
 
@@ -28,37 +113,31 @@ function AuthGuard() {
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
 
-  // Wait a tick after mount so the navigation container is fully initialized
   useEffect(() => {
-    const timer = setTimeout(() => setIsReady(true), 100);
+    const timer = setTimeout(() => setIsReady(true), 200);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (!isReady) return;
-
     try {
-      const inAuthGroup = (segments[0] as string) === '(auth)';
-      const isStudentRoute = (segments[0] as string) === 'student';
-      const isFacultyRoute = (segments[0] as string) === 'faculty';
-
-      if (!isLoggedIn && !inAuthGroup) {
+      const first = segments[0] as string;
+      if (!isLoggedIn && first !== '(auth)') {
         router.replace('/(auth)/login');
-      } else if (isLoggedIn && role === 'STUDENT' && !isStudentRoute) {
+      } else if (isLoggedIn && role === 'STUDENT' && first !== 'student') {
         router.replace('/student' as any);
-      } else if (isLoggedIn && role === 'FACULTY' && !isFacultyRoute) {
+      } else if (isLoggedIn && role === 'FACULTY' && first !== 'faculty') {
         router.replace('/faculty' as any);
       }
     } catch (e) {
-      // Silently handle navigation errors during initialization
-      console.warn('AuthGuard navigation error:', e);
+      console.warn('AuthGuard error:', e);
     }
   }, [isLoggedIn, role, segments, isReady]);
 
   return null;
 }
 
-export default function RootLayout() {
+function AppContent() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -68,31 +147,23 @@ export default function RootLayout() {
     Inter_900Black,
   });
 
-  const onLayoutReady = useCallback(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [fontsLoaded, fontError]);
-
-  // Safety timeout: always hide splash after 3 seconds no matter what
+  // Always hide splash after 2 seconds, no matter what
   useEffect(() => {
     const timer = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    }, 3000);
+      try { SplashScreen.hideAsync(); } catch (_) {}
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  // Hide splash as soon as fonts load (or fail)
+  // Hide splash when fonts load or fail
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
+      try { SplashScreen.hideAsync(); } catch (_) {}
     }
   }, [fontsLoaded, fontError]);
 
-  // Don't block rendering - render the app even without fonts
-  // (system fonts will be used as fallback until custom fonts load)
   return (
-    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutReady}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <CampusAlertProvider>
           <QueryClientProvider client={queryClient}>
@@ -110,3 +181,13 @@ export default function RootLayout() {
   );
 }
 
+// ============================================================
+// STEP 4: Root Layout wrapped in Error Boundary
+// ============================================================
+export default function RootLayout() {
+  return (
+    <AppErrorBoundary>
+      <AppContent />
+    </AppErrorBoundary>
+  );
+}
