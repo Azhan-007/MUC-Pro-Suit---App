@@ -14,7 +14,6 @@
     },
     "updates": {
       "url": "https://u.expo.dev/7bd4aa0c-b82e-43de-9f8a-27f063011fa6",
-      "checkOnLaunch": "ALWAYS",
       "enabled": true
     },
     "runtimeVersion": {
