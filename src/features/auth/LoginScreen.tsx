@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Badge, Eye, EyeOff } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { LoginSchema, LoginInput } from '../../services/authService';
 import { mockProfile } from '../../data/mockData';
@@ -20,8 +21,19 @@ import { CampusCard, CustomButton, CustomTextField } from '../../components';
 import { Colors } from '../../theme';
 
 export const LoginScreen: React.FC = () => {
-  const { login, loginError, clearError } = useAuthStore();
+  const router = useRouter();
+  const { isLoggedIn, role, login, loginError, clearError } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      if (role === 'STUDENT') {
+        router.replace('/student');
+      } else if (role === 'FACULTY') {
+        router.replace('/faculty');
+      }
+    }
+  }, [isLoggedIn, role]);
 
   const {
     control,
