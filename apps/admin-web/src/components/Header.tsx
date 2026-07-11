@@ -78,47 +78,10 @@ export default function Header({ onQuickCreate, onOpenNotifications }: HeaderPro
 
       {/* Right Controls */}
       <div className="flex items-center gap-4">
-        {/* Role Switcher Menu */}
-        <div className="relative">
-          <button 
-            onClick={() => setShowRoleMenu(!showRoleMenu)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs ${currentRoleObj.color}`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>{currentRoleObj.label}</span>
-            <ChevronDown className="w-3 h-3 opacity-60" />
-          </button>
-
-          {showRoleMenu && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowRoleMenu(false)} />
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-lg py-2 z-50 overflow-hidden">
-                <div className="px-4 py-1.5 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-100">
-                  Switch Admin Console
-                </div>
-                {roles.map(r => (
-                  <button
-                    key={r.value}
-                    onClick={() => {
-                      setActiveRole(r.value);
-                      setShowRoleMenu(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 hover:bg-slate-50 transition-colors flex flex-col gap-0.5 relative ${
-                      activeRole === r.value ? 'bg-slate-50/50' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-900">{r.label}</span>
-                      {activeRole === r.value && (
-                        <Check className="w-3 h-3 text-primary ml-auto" />
-                      )}
-                    </div>
-                    <span className="text-[10px] text-slate-500 leading-normal">{r.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+        {/* Static Role Indicator (Locked by Credentials) */}
+        <div className={`flex items-center gap-1.5 px-3.5 py-1.5 border rounded-full text-xs font-bold shadow-2xs ${currentRoleObj.color}`}>
+          <Shield className="w-3.5 h-3.5" />
+          <span>{currentRoleObj.label}</span>
         </div>
 
         {/* Quick Create Action Dropdown */}

@@ -19,7 +19,8 @@ import {
   HelpCircle,
   FolderLock,
   Library,
-  Briefcase
+  Briefcase,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -117,14 +118,23 @@ export default function Sidebar({ onOpenSupport }: SidebarProps) {
         </div>
       </div>
 
-      {/* Footer Support Button */}
-      <div className="mt-8 pt-4 border-t border-slate-200">
+      {/* Footer Actions */}
+      <div className="mt-8 pt-4 border-t border-slate-200 space-y-2">
         <button 
           onClick={onOpenSupport}
-          className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 duration-150 shadow-sm"
+          className="w-full bg-slate-900 text-white py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 duration-150 shadow-sm text-xs"
         >
-          <HelpCircle className="w-4 h-4 text-slate-400" />
-          <span className="text-sm font-medium">Quick Support</span>
+          <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+          <span>Quick Support</span>
+        </button>
+        <button 
+          onClick={() => {
+            window.location.href = '/';
+          }}
+          className="w-full bg-slate-50 border border-slate-200 text-slate-700 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-slate-100 transition-all active:scale-95 duration-150 shadow-sm text-xs"
+        >
+          <LogOut className="w-3.5 h-3.5 text-slate-500" />
+          <span>Log Out</span>
         </button>
       </div>
     </aside>
