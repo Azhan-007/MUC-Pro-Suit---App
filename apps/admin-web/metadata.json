@@ -1,0 +1,6 @@
+{
+  "name": "MUC Pro Suite",
+  "description": "Mohammed University College Admin Web Panel ERP",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
