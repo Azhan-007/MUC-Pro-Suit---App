@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { useERPStore } from '../store';
 import { useForm } from 'react-hook-form';
@@ -263,3 +265,4 @@ export default function FacultyView() {
     </div>
   );
 }
+

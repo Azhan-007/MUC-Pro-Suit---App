@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { useERPStore } from '../store';
 import { Megaphone, Plus, Bell, Clock, Calendar } from 'lucide-react';
@@ -119,3 +121,4 @@ export default function AnnouncementsView() {
     </div>
   );
 }
+

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { useERPStore } from '../store';
 import { LineChart, Plus, Download, FileText, CheckCircle, Clock } from 'lucide-react';
@@ -128,3 +130,4 @@ export default function ReportsView() {
     </div>
   );
 }
+

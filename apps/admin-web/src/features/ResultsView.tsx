@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useERPStore } from '../store';
 import { Award, CheckCircle, Search, Trophy, Sparkles } from 'lucide-react';
@@ -60,3 +62,4 @@ export default function ResultsView() {
     </div>
   );
 }
+

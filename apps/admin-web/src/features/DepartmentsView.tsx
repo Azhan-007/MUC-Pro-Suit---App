@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useERPStore } from '../store';
 import { Building2, Users, GraduationCap, MapPin, Plus } from 'lucide-react';
@@ -63,3 +65,4 @@ export default function DepartmentsView() {
     </div>
   );
 }
+

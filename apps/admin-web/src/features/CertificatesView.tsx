@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useERPStore } from '../store';
 import { FolderLock, Award, CheckCircle, Download, FileText, Plus } from 'lucide-react';
@@ -58,10 +60,35 @@ export default function CertificatesView() {
               <p className="text-xs text-outline font-mono">Date Assigned: {cert.issueDate}</p>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-outline-variant/30 flex justify-end gap-2">
+            <div className="mt-6 pt-4 border-t border-outline-variant/30 flex justify-between items-center gap-2">
+              <div className="text-xs">
+                {cert.status === 'Pending Approval' && (
+                  store.activeRole === 'ADMIN' ? (
+                    <span className="text-slate-400 font-semibold italic">Requires managerial review</span>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => store.updateCertificateStatus(cert.id, 'Generated')}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => store.updateCertificateStatus(cert.id, 'Requested')}
+                        className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded font-bold text-[10px] transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
               <button 
                 onClick={() => handleGenerateCert(cert)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-xs hover:bg-surface-tint transition-all shadow-sm"
+                disabled={cert.status === 'Pending Approval'}
+                className={`flex items-center gap-1.5 px-4 py-2 bg-primary text-on-primary rounded-lg font-bold text-xs hover:bg-surface-tint transition-all shadow-sm ${
+                  cert.status === 'Pending Approval' ? 'opacity-40 cursor-not-allowed' : ''
+                }`}
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Verify & Export</span>
@@ -73,3 +100,4 @@ export default function CertificatesView() {
     </div>
   );
 }
+

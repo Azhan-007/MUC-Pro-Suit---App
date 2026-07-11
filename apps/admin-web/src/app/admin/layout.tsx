@@ -1,38 +1,20 @@
+"use client";
+
 import React, { useState } from 'react';
-import { useERPStore } from './store';
-import Sidebar from './components/Sidebar';
-import Header from './components/Header';
-import Modal from './components/Modal';
-
-// Views
-import DashboardView from './features/DashboardView';
-import StudentView from './features/StudentView';
-import FacultyView from './features/FacultyView';
-import DepartmentsView from './features/DepartmentsView';
-import CoursesView from './features/CoursesView';
-import AttendanceView from './features/AttendanceView';
-import TimetableView from './features/TimetableView';
-import ExamsView from './features/ExamsView';
-import ResultsView from './features/ResultsView';
-import FeesView from './features/FeesView';
-import LibraryView from './features/LibraryView';
-import PlacementsView from './features/PlacementsView';
-import CertificatesView from './features/CertificatesView';
-import AnnouncementsView from './features/AnnouncementsView';
-import ReportsView from './features/ReportsView';
-import SettingsView from './features/SettingsView';
-
+import { useERPStore } from '@/store';
+import Sidebar from '@/components/Sidebar';
+import Header from '@/components/Header';
+import Modal from '@/components/Modal';
 import { 
-  Users, GraduationCap, Receipt, Megaphone, 
-  HelpCircle, Send, CheckCircle, Bell, Clock 
+  HelpCircle, Send, Bell, Clock, AlertTriangle 
 } from 'lucide-react';
 
-export default function App() {
-  const activeTab = useERPStore((state) => state.activeTab);
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const addStudent = useERPStore((state) => state.addStudent);
   const addFaculty = useERPStore((state) => state.addFaculty);
   const addFeeRecord = useERPStore((state) => state.addFeeRecord);
   const addAnnouncement = useERPStore((state) => state.addAnnouncement);
+  const activeRole = useERPStore((state) => state.activeRole);
 
   // Modal control states
   const [isSupportOpen, setIsSupportOpen] = useState(false);
@@ -48,46 +30,6 @@ export default function App() {
     { id: 2, title: 'New Semester Schedule Approved', detail: 'The academic routine for Winter term is now live.', time: '2 hours ago', type: 'academic' },
     { id: 3, title: 'Biometric Attendance Sync Complete', detail: '948 student logs synced from block reader devices.', time: '4 hours ago', type: 'attendance' },
   ];
-
-  // Render correct view based on active tab
-  const renderView = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardView />;
-      case 'students':
-        return <StudentView />;
-      case 'faculty':
-        return <FacultyView />;
-      case 'departments':
-        return <DepartmentsView />;
-      case 'courses':
-        return <CoursesView />;
-      case 'attendance':
-        return <AttendanceView />;
-      case 'timetable':
-        return <TimetableView />;
-      case 'exams':
-        return <ExamsView />;
-      case 'results':
-        return <ResultsView />;
-      case 'fees':
-        return <FeesView />;
-      case 'library':
-        return <LibraryView />;
-      case 'placements':
-        return <PlacementsView />;
-      case 'certificates':
-        return <CertificatesView />;
-      case 'announcements':
-        return <AnnouncementsView />;
-      case 'reports':
-        return <ReportsView />;
-      case 'settings':
-        return <SettingsView />;
-      default:
-        return <DashboardView />;
-    }
-  };
 
   // Support ticket dispatch handler
   const handleSendSupport = (e: React.FormEvent) => {
@@ -139,7 +81,7 @@ export default function App() {
       studentId: data.get('studentId') as string,
       studentName: name,
       initials: name.split(' ').map(n => n[0]).join('').toUpperCase(),
-      date: 'Oct 15, 2026',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       amount: Number(data.get('amount')),
       method: data.get('method') as string,
       status: 'Paid'
@@ -175,7 +117,7 @@ export default function App() {
 
         {/* Scrollable Workspace Container */}
         <main className="pt-24 pb-12 px-8 min-h-[calc(100vh-64px)] max-w-7xl mx-auto">
-          {renderView()}
+          {children}
         </main>
       </div>
 
@@ -187,7 +129,7 @@ export default function App() {
       >
         <form onSubmit={handleSendSupport} className="space-y-4">
           <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex gap-3 text-xs text-slate-600 leading-relaxed">
-            <HelpCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <HelpCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-slate-900">MUC IT Support Operations</p>
               <p className="mt-1">Describe any latency or administrative questions. Our team will review the ticket immediately.</p>
@@ -202,7 +144,7 @@ export default function App() {
               placeholder="e.g. Database connection latency in Lab 4..."
               rows={4}
               required
-              className="w-full bg-white border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition-all text-slate-900"
+              className="w-full bg-white border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900"
             />
           </div>
 
@@ -216,7 +158,7 @@ export default function App() {
             </button>
             <button 
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all text-sm shadow-sm flex items-center gap-1.5"
+              className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-all text-sm shadow-sm flex items-center gap-1.5"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Dispatch Ticket</span>
@@ -233,8 +175,8 @@ export default function App() {
       >
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
           {notifications.map(n => (
-            <div key={n.id} className="p-4 rounded-lg bg-white border border-slate-200 flex gap-3 hover:border-blue-600 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+            <div key={n.id} className="p-4 rounded-lg bg-white border border-slate-200 flex gap-3 hover:border-primary transition-colors">
+              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-primary shrink-0">
                 <Bell className="w-4 h-4" />
               </div>
               <div>
@@ -251,7 +193,7 @@ export default function App() {
         <div className="pt-6 border-t border-slate-200 flex justify-end mt-6">
           <button 
             onClick={() => setIsNotificationsOpen(false)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all text-sm shadow-sm"
+            className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/95 transition-all text-sm shadow-sm"
           >
             Acknowledge Alerts
           </button>
@@ -268,21 +210,21 @@ export default function App() {
           <form onSubmit={handleQuickStudentSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Full Name</label>
-              <input name="name" required placeholder="e.g. Ahmed Khan" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="name" required placeholder="e.g. Ahmed Khan" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Email</label>
-              <input name="email" type="email" required placeholder="e.g. ahmed.k@muc.edu" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="email" type="email" required placeholder="e.g. ahmed.k@muc.edu" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Department</label>
-              <input name="department" required placeholder="e.g. Computer Science" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="department" required placeholder="e.g. Computer Science" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Course Assigned</label>
-              <input name="course" required placeholder="e.g. MCA" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="course" required placeholder="e.g. MCA" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
-            <button type="submit" className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-all">Register Profile</button>
+            <button type="submit" className="w-full py-2.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary/95 transition-all">Register Profile</button>
           </form>
         )}
 
@@ -290,51 +232,51 @@ export default function App() {
           <form onSubmit={handleQuickFacultySubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Full Name</label>
-              <input name="name" required placeholder="e.g. Prof. Alan Turing" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="name" required placeholder="e.g. Prof. Alan Turing" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Email</label>
-              <input name="email" type="email" required placeholder="e.g. alan.t@muc.edu" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="email" type="email" required placeholder="e.g. alan.t@muc.edu" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Department</label>
-              <input name="department" required placeholder="e.g. Artificial Intelligence" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="department" required placeholder="e.g. Artificial Intelligence" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Course Assigned</label>
-              <input name="course" required placeholder="e.g. M.Tech AI" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="course" required placeholder="e.g. M.Tech AI" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Subject</label>
-              <input name="subject" required placeholder="e.g. Neural Networks" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="subject" required placeholder="e.g. Neural Networks" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
-            <button type="submit" className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-all">Register Faculty</button>
+            <button type="submit" className="w-full py-2.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary/95 transition-all">Register Faculty</button>
           </form>
         )}
 
-        {quickCreateType === 'fee' && (
+        {quickCreateType === 'fee' && activeRole !== 'ADMIN' && (
           <form onSubmit={handleQuickFeeSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Student Full Name</label>
-              <input name="studentName" required placeholder="e.g. Jane Doe" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="studentName" required placeholder="e.g. Jane Doe" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Student ID</label>
-              <input name="studentId" required placeholder="e.g. S10245" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="studentId" required placeholder="e.g. S10245" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Amount ($)</label>
-              <input name="amount" type="number" required placeholder="e.g. 2500" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="amount" type="number" required placeholder="e.g. 2500" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Method</label>
-              <select name="method" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900">
+              <select name="method" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900">
                 <option value="UPI">UPI</option>
                 <option value="Card">Card</option>
                 <option value="Bank Transfer">Bank Transfer</option>
               </select>
             </div>
-            <button type="submit" className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-all">Record Payment</button>
+            <button type="submit" className="w-full py-2.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary/95 transition-all">Record Payment</button>
           </form>
         )}
 
@@ -342,13 +284,13 @@ export default function App() {
           <form onSubmit={handleQuickAnnSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Announcement Title</label>
-              <input name="title" required placeholder="e.g. Semester Exam Routine Released" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <input name="title" required placeholder="e.g. Semester Exam Routine Released" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Content Detail</label>
-              <textarea name="content" required placeholder="e.g. End Semester examinations start Nov 20..." rows={4} className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 text-slate-900" />
+              <textarea name="content" required placeholder="e.g. End Semester examinations start Nov 20..." rows={4} className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
             </div>
-            <button type="submit" className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-all">Publish</button>
+            <button type="submit" className="w-full py-2.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary/95 transition-all">Publish</button>
           </form>
         )}
       </Modal>

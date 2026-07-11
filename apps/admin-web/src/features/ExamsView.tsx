@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useERPStore } from '../store';
 import { FileText, Calendar, Clock, MapPin, Sparkles } from 'lucide-react';
@@ -54,3 +56,4 @@ export default function ExamsView() {
     </div>
   );
 }
+

@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useERPStore } from '../store';
 import { Briefcase, Building2, TrendingUp, Sparkles, Star } from 'lucide-react';
@@ -85,3 +87,4 @@ export default function PlacementsView() {
     </div>
   );
 }
+

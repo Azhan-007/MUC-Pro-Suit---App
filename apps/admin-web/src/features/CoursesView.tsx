@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useERPStore } from '../store';
 import { BookOpen, Star, Plus } from 'lucide-react';
@@ -59,3 +61,4 @@ export default function CoursesView() {
     </div>
   );
 }
+

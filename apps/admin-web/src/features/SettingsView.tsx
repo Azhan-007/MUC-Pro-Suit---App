@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useERPStore } from '../store';
 import { Settings, Shield, Server, Database, Save, CheckCircle } from 'lucide-react';
@@ -96,6 +98,38 @@ export default function SettingsView() {
             </div>
           </div>
 
+          {store.activeRole === 'SUPER_ADMIN' && (
+            <div className="pt-6 border-t border-outline-variant/30 space-y-4">
+              <h4 className="font-sans font-bold text-base text-on-surface flex items-center gap-2">
+                <Shield className="w-5 h-5 text-purple-600" />
+                <span>System Security Logs & Audit Trail</span>
+              </h4>
+              <div className="border border-outline-variant rounded-xl overflow-hidden bg-slate-50">
+                <div className="max-h-60 overflow-y-auto divide-y divide-slate-200 text-xs">
+                  {store.securityLogs.map((log) => (
+                    <div key={log.id} className="p-3 hover:bg-slate-100/50 transition-colors flex items-center justify-between gap-4 font-mono">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-semibold text-slate-400">{log.timestamp}</span>
+                        <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] uppercase ${
+                          log.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700' : log.status === 'FAILED' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
+                        }`}>
+                          {log.status}
+                        </span>
+                        <span className="font-bold text-slate-700">{log.user}</span>
+                      </div>
+                      <div className="text-slate-600 font-sans flex-1 text-right truncate">
+                        {log.action}
+                      </div>
+                      <div className="text-[10px] font-semibold text-slate-400 shrink-0">
+                        {log.ipAddress}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="pt-6 border-t border-outline-variant/30 flex justify-end">
             <button 
               type="submit"
@@ -110,3 +144,4 @@ export default function SettingsView() {
     </div>
   );
 }
+

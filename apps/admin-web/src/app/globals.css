@@ -1,7 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Shadcn Variables */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* institutional colors */
   --color-on-secondary-fixed: #0f172a;
   --color-surface-tint: #1d4ed8;
   --color-on-error: #ffffff;
@@ -49,9 +74,28 @@
   --color-background: #f8fafc;
   --color-primary: #2563eb;
   --color-tertiary-fixed-dim: #fed7aa;
+}
 
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+:root {
+  --background: oklch(0.985 0.005 240);
+  --foreground: oklch(0.145 0.01 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.5 0.25 250);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0.01 240);
+  --secondary-foreground: oklch(0.205 0.01 240);
+  --muted: oklch(0.97 0.01 240);
+  --muted-foreground: oklch(0.556 0.01 240);
+  --accent: oklch(0.97 0.01 240);
+  --accent-foreground: oklch(0.205 0.01 240);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0.01 240);
+  --input: oklch(0.922 0.01 240);
+  --ring: oklch(0.708 0.01 240);
+  --radius: 0.625rem;
 }
 
 body {
@@ -78,56 +122,56 @@ body {
 
 /* Solid Overrides for Tailwind dynamic opacity utility classes */
 .bg-primary\/5 {
-  background-color: #eff6ff !important; /* solid light blue-50 */
+  background-color: #eff6ff !important;
 }
 .bg-primary\/10 {
-  background-color: #dbeafe !important; /* solid light blue-100 */
+  background-color: #dbeafe !important;
 }
 .bg-primary\/15, .bg-primary\/20 {
-  background-color: #bfdbfe !important; /* solid blue-200 */
+  background-color: #bfdbfe !important;
 }
 
 .bg-secondary\/15, .bg-secondary\/10 {
-  background-color: #f0f9ff !important; /* solid sky-50 */
+  background-color: #f0f9ff !important;
 }
 .bg-secondary\/35 {
-  background-color: #bae6fd !important; /* solid sky-200 */
+  background-color: #bae6fd !important;
 }
 
 .bg-emerald-500\/10, .bg-emerald-600\/10, .bg-emerald-500\/5 {
-  background-color: #f0fdf4 !important; /* solid emerald-50 */
+  background-color: #f0fdf4 !important;
 }
 
 .bg-amber-500\/10, .bg-amber-600\/10 {
-  background-color: #fffbeb !important; /* solid amber-50 */
+  background-color: #fffbeb !important;
 }
 
 .bg-error-container\/30, .bg-error\/10 {
-  background-color: #fef2f2 !important; /* solid red-50 */
+  background-color: #fef2f2 !important;
 }
 .bg-error-container\/80 {
-  background-color: #fee2e2 !important; /* solid red-100 */
+  background-color: #fee2e2 !important;
 }
 
 .bg-surface-container-lowest\/85 {
-  background-color: #ffffff !important; /* solid white */
+  background-color: #ffffff !important;
 }
 
 /* Hover backgrounds */
 .hover\:bg-surface-container-low\/50:hover {
-  background-color: #f8fafc !important; /* solid slate-50 */
+  background-color: #f8fafc !important;
 }
 .hover\:bg-primary\/35:hover {
-  background-color: #93c5fd !important; /* solid blue-300 */
+  background-color: #93c5fd !important;
 }
 .hover\:bg-secondary\/35:hover {
-  background-color: #7dd3fc !important; /* solid sky-300 */
+  background-color: #7dd3fc !important;
 }
 .hover\:border-outline-variant\/30:hover {
-  border-color: #cbd5e1 !important; /* solid slate-300 */
+  border-color: #cbd5e1 !important;
 }
 .hover\:bg-error-container\/80:hover {
-  background-color: #fca5a5 !important; /* solid red-200 */
+  background-color: #fca5a5 !important;
 }
 
 /* Borders */
@@ -135,35 +179,43 @@ body {
 .border-outline-variant\/40, 
 .border-outline-variant\/50, 
 .border-outline-variant\/60 {
-  border-color: #e2e8f0 !important; /* solid slate-200 */
+  border-color: #e2e8f0 !important;
 }
 
 .border-primary\/10, .border-primary\/20 {
-  border-color: #bfdbfe !important; /* solid blue-200 */
+  border-color: #bfdbfe !important;
 }
 
 .border-emerald-500\/20 {
-  border-color: #bbf7d0 !important; /* solid emerald-200 */
+  border-color: #bbf7d0 !important;
 }
 
 .border-amber-500\/20 {
-  border-color: #fde68a !important; /* solid amber-200 */
+  border-color: #fde68a !important;
 }
 .border-error\/10 {
-  border-color: #fca5a5 !important; /* solid red-300 */
+  border-color: #fca5a5 !important;
 }
 
 /* Divides */
 .divide-outline-variant\/30 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important; /* solid slate-200 */
+  border-color: #e2e8f0 !important;
 }
 .divide-outline-variant\/60 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important; /* solid slate-200 */
+  border-color: #e2e8f0 !important;
 }
 
 /* Focus rings */
 .focus\:ring-primary\/20:focus {
-  --tw-ring-color: #dbeafe !important; /* solid light blue-100 */
+  --tw-ring-color: #dbeafe !important;
   box-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color) !important;
 }
 
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { useERPStore } from '../store';
 import { Library, BookOpen, BookmarkCheck, Search, Plus } from 'lucide-react';
@@ -54,3 +56,4 @@ export default function LibraryView() {
     </div>
   );
 }
+

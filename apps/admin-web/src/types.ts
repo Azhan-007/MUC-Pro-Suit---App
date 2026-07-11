@@ -3,6 +3,18 @@ export type FacultyStatus = 'Marked' | 'Pending' | 'Scheduled';
 export type AttendanceStatus = 'Present' | 'Absent';
 export type FeeStatus = 'Paid' | 'Partial' | 'Overdue';
 
+export type UserRole = 'ADMIN' | 'MASTER_ADMIN' | 'SUPER_ADMIN';
+
+export interface SecurityLog {
+  id: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  category: 'AUTH' | 'DATABASE' | 'SECURITY' | 'ACADEMIC' | 'FINANCIAL';
+  status: 'SUCCESS' | 'WARNING' | 'FAILED';
+  ipAddress: string;
+}
+
 export interface Student {
   id: string;
   name: string;

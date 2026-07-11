@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { useERPStore } from '../store';
 import { 
@@ -411,3 +413,4 @@ export default function DashboardView() {
     </div>
   );
 }
+

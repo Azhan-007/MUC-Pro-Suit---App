@@ -2,13 +2,15 @@ import { create } from 'zustand';
 import { 
   Student, Faculty, AttendanceRecord, FeeRecord, Announcement, EventItem,
   Department, Course, TimetableSlot, ExamSchedule, ResultRecord, 
-  LibraryBook, PlacementRecord, Certificate, ReportItem
+  LibraryBook, PlacementRecord, Certificate, ReportItem, UserRole, SecurityLog
 } from './types';
 
 interface ERPStore {
-  // Navigation & Config
+  // Navigation & Role Configuration
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  activeRole: UserRole;
+  setActiveRole: (role: UserRole) => void;
   academicYear: string;
   setAcademicYear: (year: string) => void;
   semester: string;
@@ -32,13 +34,14 @@ interface ERPStore {
   placements: PlacementRecord[];
   certificates: Certificate[];
   reports: ReportItem[];
+  securityLogs: SecurityLog[];
 
   // Mutations
-  addStudent: (student: Omit<Student, 'id'>) => void;
+  addStudent: (student: Omit<Student, 'id' | 'initials'>) => void;
   updateStudent: (id: string, updates: Partial<Student>) => void;
   deleteStudent: (id: string) => void;
   
-  addFaculty: (faculty: Omit<Faculty, 'id'>) => void;
+  addFaculty: (faculty: Omit<Faculty, 'id' | 'initials'>) => void;
   updateFaculty: (id: string, updates: Partial<Faculty>) => void;
   deleteFaculty: (id: string) => void;
 
@@ -47,13 +50,41 @@ interface ERPStore {
   addAnnouncement: (ann: Omit<Announcement, 'id' | 'timestamp'>) => void;
   addEvent: (evt: Omit<EventItem, 'id'>) => void;
   addCertificate: (cert: Omit<Certificate, 'id'>) => void;
+  updateCertificateStatus: (id: string, status: Certificate['status']) => void;
   generateReport: (title: string, type: ReportItem['type']) => void;
+  addSecurityLog: (log: Omit<SecurityLog, 'id' | 'timestamp'>) => void;
 }
 
 export const useERPStore = create<ERPStore>((set) => ({
-  // Navigation & Config
+  // Navigation & Role Configuration
   activeTab: 'dashboard',
   setActiveTab: (tab) => set({ activeTab: tab }),
+  activeRole: 'SUPER_ADMIN', // Default to Super Admin so all features are visible initially
+  setActiveRole: (role) => set((state) => {
+    // Log the role change
+    const emailMap = {
+      ADMIN: 'admin@muc.edu',
+      MASTER_ADMIN: 'masteradmin@muc.edu',
+      SUPER_ADMIN: 'superadmin@muc.edu'
+    };
+    const id = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id,
+      timestamp,
+      user: emailMap[role],
+      action: `User session elevated/changed to ${role}`,
+      category: 'AUTH',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return { 
+      activeRole: role, 
+      securityLogs: [newLog, ...state.securityLogs],
+      // If switching to a role that doesn't have access to the activeTab, fall back to dashboard
+      activeTab: (role === 'ADMIN' && ['fees', 'reports'].includes(state.activeTab)) ? 'dashboard' : state.activeTab
+    };
+  }),
   academicYear: '2024-25',
   setAcademicYear: (year) => set({ academicYear: year }),
   semester: 'Fall Semester',
@@ -67,7 +98,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: 'S10245',
       name: 'Ahmed Khan',
       email: 'ahmed.k@muc.edu',
-      avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAnmYFV9mpwf_144fF3roKvHeU232G-N8zzKMsINS7QV1E11_OkFNVgeDRIiPqQvB2jwwZB3zvh9__6feXlpDhlmuGGLIZsUBZQU_lwK2Yzi4ORvhdjYquQJp2jS8BN2g6YIK-CLX_UlAPQVRPI02C_QjF90dYfUSfx3CjJYuq2i5bP02kK99harV0Q2VphKNvJrg4NBouUpQ188avwUATPdOdKLwF9uGZvmlsrxVSRqWSi8izBPL430A',
+      avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150',
       initials: 'AK',
       department: 'Computer Science',
       course: 'MCA',
@@ -79,7 +110,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: 'S10289',
       name: 'Sarah John',
       email: 'sarah.j@muc.edu',
-      avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC275UfSmyNrLHT4ETzc5cP-TX2EOwsy78vPJQWAMot1PAfoQWbh67UGGSbD9Xl0YYc8_l6ZKZT9lOvlz3GYHJgb1P4MIk991uNGs0Bk7VCiZnlcRsoYZPFzG_1fgDQNyp0251sY6mtPqgIXF4iUDg6UACylnCuDTprrpa-rglcxhUAoo_iAl5j100VGfynDRIA-UNN46JxIkivbRG3x1DwYinz_8GkB5eKxfdUdBnQfSjlNoBBFKES1Q',
+      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
       initials: 'SJ',
       department: 'Business Administration',
       course: 'B.Com',
@@ -91,7 +122,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: 'S10342',
       name: 'Chen Wei',
       email: 'chen.w@muc.edu',
-      avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAh3vJ_m497xhSB7OrwBNeUWydgGrVajTLX1R7cJHEEcBlL9qKbKIlZoJssvCANOFdceb-kHMkgnWhiQNkpZ79ztbYLsSSbd8bcMJ8tLZibgGaxyRBiS5p3vw2Kz-Rm545IQ5TpFWQzdVcy03V0bFHzMsaOh0Yxm2oivCJf_TNjJPBf9EkLSxYq9LZJZSzUpwU4xhui4Y0LUMrZsdIeu4VsgSODdqGUWuBfjZ7rlb7gcs5bUm4bDc1shw',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
       initials: 'CW',
       department: 'Computer Science',
       course: 'Computer Science',
@@ -103,7 +134,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: 'S10511',
       name: 'Amara Okafor',
       email: 'amara.o@muc.edu',
-      avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAocBJQWo4LTQe88x7sTsB_9j9emHD34x1NnnLYA0iFL1b4ScT4tzeWs1t6IZzF3ecMh1G2oYQTHLt2slTmj-z6aUzYSW2VFxQDekEZFz6BPQ7JOAdTo6xBOjhT_ICeDDnq83gV1DOTAoFQ3g1AYZilNNyxmyn3vMJa_GfNidU_OGSU5qWU5SH3U1fwdCG3aUYfUeZNYiHBsqNNdYnL7t8CmyJxjY0YVny0-gmjV7M9EFkuMAZ17Zb9Hg',
+      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150',
       initials: 'AO',
       department: 'Business Administration',
       course: 'BBA',
@@ -115,7 +146,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: 'S10620',
       name: 'Omar Zayed',
       email: 'omar.z@muc.edu',
-      avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCUxJrht1ZxEOPTDPOro7Vbd__UBtn-q1Zm779nRrkgK2kwBafhe7oAXqeqzZBSt9iNjFY2fJxkPgPlYx57ZXMpX0CQpnLPk87aSno_mdy0K2npHLe9uyIrVEQkghVtL7sTX6kuGzkNhXdZqcz7iBvDzVsvO4VkstSwPaYTzipSVyRrqfELTWHZVJTa5fkGzL4GmKbZMvRRrPzhg0V00JzcfE5Q-s-m_MQs_mjS5NB35cB-As6Q09tRAQ',
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
       initials: 'OZ',
       department: 'Artificial Intelligence',
       course: 'AI',
@@ -152,7 +183,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: 'F201',
       name: 'Dr. Sarah Jenkins',
       email: 'sarah.j@muc.edu',
-      avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCPSgZGUE6FGABNPPFG7UPZneoNfV3h-tNnHr64aSlZErImykBoqGpl-8guZhcYWR5BOU4ajviYCVMxaSEGemOJ-YP0ptBL4N5r_6Xft4rmOLbzml77aM2d6_GRhvXah32DPMCtmnzXSOaF6MVMJVsevgsaTK8d9F8fTRjkIPOnySthw9hCw-R4WA8PNCfppW0krRhz6moRnemvIPIbWWUXgqlY_K3hHVemF__YYM1gaMMhFZOifNGKlg',
+      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
       initials: 'SJ',
       department: 'Computer Science',
       course: 'B.Tech CS',
@@ -164,7 +195,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: 'F202',
       name: 'Prof. Alan Turing',
       email: 'alan.t@muc.edu',
-      avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDlavQ21TlRHfHevvmcGJrQAn6CiVEC6honU2SsPy9IhBZNHyBpLnXIQeOEIK6HmosvPfijt-N-hawtJW5Q3QJbfCQn3qNN5GFChyUNs4ir1Ciff9R1tmuNF8GfAFiA9W4qH5GROlr6icqvjuTesbTJuer4gLxPjFDpB6HXAIzmG8ea-ejEag1W1KDlNZZ9y0jVdI1OR02Sd0k3T8WhjawsjYoZrvKcL8RYmOQxRd3pEbh0WgCxJkcrVQ',
+      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
       initials: 'AT',
       department: 'Artificial Intelligence',
       course: 'M.Tech AI',
@@ -176,7 +207,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: 'F203',
       name: 'Dr. Maria Garcia',
       email: 'maria.g@muc.edu',
-      avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuABRTxhfRN84bZLLMYqcPnY_3fx6EA8CSnL7fO3qW6dxlsJMVTz17A3EK2CmG9pIsWqEetdRIOpdUN86tk6fznynKrcMDXU1wBn-hwweMxcZqpH-oSj0dQesRrCYvXwLlhHLEOhyuUOlLMf3CTggR2fm2k41ypLbIXvPNZfKRZqMDKFRopzkVRBVBvUUZgy65foGKJyWi5pwyEAqus13tvAsEGLM9Ymi367YlbQYZ1XEmB9YNwRjBT0CA',
+      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
       initials: 'MG',
       department: 'Business Administration',
       course: 'BBA',
@@ -236,7 +267,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       studentId: '2024-001',
       studentName: 'Jane Doe',
       initials: 'JD',
-      date: 'Oct 12, 2023',
+      date: 'Oct 12, 2025',
       amount: 2500,
       method: 'UPI',
       status: 'Paid',
@@ -246,7 +277,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       studentId: '2024-042',
       studentName: 'Mark Smith',
       initials: 'MS',
-      date: 'Oct 14, 2023',
+      date: 'Oct 14, 2025',
       amount: 1200,
       method: 'Card',
       status: 'Partial',
@@ -256,7 +287,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       studentId: '2024-018',
       studentName: 'Lucy Brown',
       initials: 'LB',
-      date: 'Sep 28, 2023',
+      date: 'Sep 28, 2025',
       amount: 3800,
       method: 'Bank',
       status: 'Overdue',
@@ -266,7 +297,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       studentId: '2024-099',
       studentName: 'Alan Walker',
       initials: 'AW',
-      date: 'Oct 15, 2023',
+      date: 'Oct 15, 2025',
       amount: 2500,
       method: 'UPI',
       status: 'Paid',
@@ -277,7 +308,7 @@ export const useERPStore = create<ERPStore>((set) => ({
     {
       id: 'ANN-01',
       title: 'Semester Exam Schedule Released',
-      content: 'Exams starting from Nov 20, 2024. All departments notified.',
+      content: 'Exams starting from Nov 20, 2026. All departments notified.',
       timestamp: '2 HOURS AGO',
       category: 'secondary'
     },
@@ -357,6 +388,14 @@ export const useERPStore = create<ERPStore>((set) => ({
     { id: 'REP02', title: 'FY 2026 Budget Outlook', type: 'Financial', generatedAt: '2026-07-05 02:15 PM', size: '1.8 MB' }
   ],
 
+  securityLogs: [
+    { id: 'LOG-1001', timestamp: '2026-07-11 11:30 AM', user: 'superadmin@muc.edu', action: 'Institutional Configurations Updated', category: 'SECURITY', status: 'SUCCESS', ipAddress: '192.168.1.50' },
+    { id: 'LOG-1002', timestamp: '2026-07-11 11:15 AM', user: 'masteradmin@muc.edu', action: 'Fee Receipt generated for S10245', category: 'FINANCIAL', status: 'SUCCESS', ipAddress: '192.168.1.102' },
+    { id: 'LOG-1003', timestamp: '2026-07-11 10:45 AM', user: 'admin@muc.edu', action: 'Failed Login Attempt - Invalid Credentials', category: 'AUTH', status: 'FAILED', ipAddress: '198.51.100.12' },
+    { id: 'LOG-1004', timestamp: '2026-07-11 09:00 AM', user: 'system', action: 'Database backup synchronized with S3 bucket', category: 'DATABASE', status: 'SUCCESS', ipAddress: '127.0.0.1' },
+    { id: 'LOG-1005', timestamp: '2026-07-11 08:30 AM', user: 'admin@muc.edu', action: 'Student Profile S10711 Registered', category: 'ACADEMIC', status: 'SUCCESS', ipAddress: '192.168.1.105' }
+  ],
+
   // Mutations
   addStudent: (student) => set((state) => {
     const id = `S${10000 + state.students.length + 1}`;
@@ -366,16 +405,66 @@ export const useERPStore = create<ERPStore>((set) => ({
       id, 
       initials 
     };
-    return { students: [newStudent, ...state.students] };
+
+    // Log this action
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Created Student profile: ${student.name} (${id})`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return { 
+      students: [newStudent, ...state.students],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
   }),
 
-  updateStudent: (id, updates) => set((state) => ({
-    students: state.students.map((s) => (s.id === id ? { ...s, ...updates } : s)),
-  })),
+  updateStudent: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Updated Student profile: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
 
-  deleteStudent: (id) => set((state) => ({
-    students: state.students.filter((s) => s.id !== id),
-  })),
+    return {
+      students: state.students.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteStudent: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Deleted Student profile: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      students: state.students.filter((s) => s.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
 
   addFaculty: (faculty) => set((state) => {
     const id = `F${state.faculties.length + 201}`;
@@ -385,20 +474,86 @@ export const useERPStore = create<ERPStore>((set) => ({
       id, 
       initials 
     };
-    return { faculties: [newFaculty, ...state.faculties] };
+
+    // Log this action
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Created Faculty profile: ${faculty.name} (${id})`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return { 
+      faculties: [newFaculty, ...state.faculties],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
   }),
 
-  updateFaculty: (id, updates) => set((state) => ({
-    faculties: state.faculties.map((f) => (f.id === id ? { ...f, ...updates } : f)),
-  })),
+  updateFaculty: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Updated Faculty profile: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
 
-  deleteFaculty: (id) => set((state) => ({
-    faculties: state.faculties.filter((f) => f.id !== id),
-  })),
+    return {
+      faculties: state.faculties.map((f) => (f.id === id ? { ...f, ...updates } : f)),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
 
-  markAttendance: (record) => set((state) => ({
-    attendanceRecords: [record, ...state.attendanceRecords],
-  })),
+  deleteFaculty: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Deleted Faculty profile: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      faculties: state.faculties.filter((f) => f.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  markAttendance: (record) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Attendance marked for: ${record.studentName} - ${record.status}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      attendanceRecords: [record, ...state.attendanceRecords],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
 
   addFeeRecord: (record) => set((state) => {
     const receiptNo = `#REC-${9000 + state.feeRecords.length + 21}`;
@@ -406,7 +561,25 @@ export const useERPStore = create<ERPStore>((set) => ({
       ...record, 
       receiptNo 
     };
-    return { feeRecords: [newFee, ...state.feeRecords] };
+
+    // Log this action
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Recorded Fee Payment of $${record.amount} for student ${record.studentName}`,
+      category: 'FINANCIAL',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return { 
+      feeRecords: [newFee, ...state.feeRecords],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
   }),
 
   addAnnouncement: (ann) => set((state) => {
@@ -416,7 +589,25 @@ export const useERPStore = create<ERPStore>((set) => ({
       id,
       timestamp: 'JUST NOW'
     };
-    return { announcements: [newAnn, ...state.announcements] };
+
+    // Log this action
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Created new announcement: "${ann.title}"`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return { 
+      announcements: [newAnn, ...state.announcements],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
   }),
 
   addEvent: (evt) => set((state) => {
@@ -428,7 +619,45 @@ export const useERPStore = create<ERPStore>((set) => ({
   addCertificate: (cert) => set((state) => {
     const id = `CRT0${state.certificates.length + 3}`;
     const newCert: Certificate = { ...cert, id };
-    return { certificates: [newCert, ...state.certificates] };
+
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Requested Certificate (${cert.type}) for ${cert.studentName}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return { 
+      certificates: [newCert, ...state.certificates],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updateCertificateStatus: (id, status) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const cert = state.certificates.find(c => c.id === id);
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Certificate (${cert?.type || ''}) status for ${cert?.studentName || ''} updated to ${status}`,
+      category: 'SECURITY',
+      status: status === 'Generated' ? 'SUCCESS' : 'WARNING',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      certificates: state.certificates.map(c => c.id === id ? { ...c, status } : c),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
   }),
 
   generateReport: (title, type) => set((state) => {
@@ -442,6 +671,35 @@ export const useERPStore = create<ERPStore>((set) => ({
       generatedAt: formattedDate,
       size: (Math.random() * 3 + 1).toFixed(1) + ' MB'
     };
-    return { reports: [newReport, ...state.reports] };
+
+    // Log this action
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Generated Institutional Report: "${title}" (Type: ${type})`,
+      category: 'FINANCIAL',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return { 
+      reports: [newReport, ...state.reports],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  addSecurityLog: (log) => set((state) => {
+    const id = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleString();
+    const newLog: SecurityLog = {
+      ...log,
+      id,
+      timestamp
+    };
+    return { securityLogs: [newLog, ...state.securityLogs] };
   })
 }));
