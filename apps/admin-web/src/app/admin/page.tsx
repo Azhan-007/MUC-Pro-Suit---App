@@ -35,40 +35,48 @@ export default function AdminPage() {
 
   const tab = getRenderedTab();
 
-  switch (tab) {
-    case 'dashboard':
-      return <DashboardView />;
-    case 'students':
-      return <StudentView />;
-    case 'faculty':
-      return <FacultyView />;
-    case 'departments':
-      return <DepartmentsView />;
-    case 'courses':
-      return <CoursesView />;
-    case 'attendance':
-      return <AttendanceView />;
-    case 'timetable':
-      return <TimetableView />;
-    case 'exams':
-      return <ExamsView />;
-    case 'results':
-      return <ResultsView />;
-    case 'fees':
-      return <FeesView />;
-    case 'library':
-      return <LibraryView />;
-    case 'placements':
-      return <PlacementsView />;
-    case 'certificates':
-      return <CertificatesView />;
-    case 'announcements':
-      return <AnnouncementsView />;
-    case 'reports':
-      return <ReportsView />;
-    case 'settings':
-      return <SettingsView />;
-    default:
-      return <DashboardView />;
-  }
+  const renderView = () => {
+    switch (tab) {
+      case 'dashboard':
+        return <DashboardView />;
+      case 'students':
+        return <StudentView />;
+      case 'faculty':
+        return <FacultyView />;
+      case 'departments':
+        return <DepartmentsView />;
+      case 'courses':
+        return <CoursesView />;
+      case 'attendance':
+        return <AttendanceView />;
+      case 'timetable':
+        return <TimetableView />;
+      case 'exams':
+        return <ExamsView />;
+      case 'results':
+        return <ResultsView />;
+      case 'fees':
+        return <FeesView />;
+      case 'library':
+        return <LibraryView />;
+      case 'placements':
+        return <PlacementsView />;
+      case 'certificates':
+        return <CertificatesView />;
+      case 'announcements':
+        return <AnnouncementsView />;
+      case 'reports':
+        return <ReportsView />;
+      case 'settings':
+        return <SettingsView />;
+      default:
+        return <DashboardView />;
+    }
+  };
+
+  return (
+    <div key={tab} className="animate-in fade-in-0 zoom-in-[0.99] duration-150 ease-out">
+      {renderView()}
+    </div>
+  );
 }

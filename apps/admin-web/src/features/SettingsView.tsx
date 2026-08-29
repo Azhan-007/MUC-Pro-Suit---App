@@ -3,6 +3,7 @@
 import React from 'react';
 import { useERPStore } from '../store';
 import { Settings, Shield, Server, Database, Save, CheckCircle } from 'lucide-react';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 export default function SettingsView() {
   const store = useERPStore();
@@ -34,7 +35,7 @@ export default function SettingsView() {
             <div>
               <label className="block text-xs font-bold text-outline uppercase mb-1.5">Institution Name</label>
               <input 
-                defaultValue="Mohammed University College"
+                defaultValue="Mazharul Uloom College Autonomous"
                 className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 type="text"
               />
@@ -53,28 +54,30 @@ export default function SettingsView() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-outline-variant/30">
             <div>
               <label className="block text-xs font-bold text-outline uppercase mb-1.5">Academic Calendar Selection</label>
-              <select 
+              <CustomSelect 
                 value={store.academicYear}
                 onChange={(e) => store.setAcademicYear(e.target.value)}
+                options={[
+                  { value: "2024-25", label: "2024-25 Term" },
+                  { value: "2023-24", label: "2023-24 Term" },
+                  { value: "2022-23", label: "2022-23 Term" }
+                ]}
                 className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              >
-                <option value="2024-25">2024-25 Term</option>
-                <option value="2023-24">2023-24 Term</option>
-                <option value="2022-23">2022-23 Term</option>
-              </select>
+              />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-outline uppercase mb-1.5">Standard Term Period</label>
-              <select 
+              <CustomSelect 
                 value={store.semester}
                 onChange={(e) => store.setSemester(e.target.value)}
+                options={[
+                  { value: "Fall Semester", label: "Fall Semester" },
+                  { value: "Spring Semester", label: "Spring Semester" },
+                  { value: "Summer Term", label: "Summer Term" }
+                ]}
                 className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              >
-                <option value="Fall Semester">Fall Semester</option>
-                <option value="Spring Semester">Spring Semester</option>
-                <option value="Summer Term">Summer Term</option>
-              </select>
+              />
             </div>
           </div>
 

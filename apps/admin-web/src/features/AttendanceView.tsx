@@ -8,6 +8,7 @@ import {
   Settings, Sparkles, Download, Info
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 export default function AttendanceView() {
   const store = useERPStore();
@@ -102,44 +103,32 @@ export default function AttendanceView() {
         <div className="flex flex-wrap items-end gap-6">
           <div className="flex-1 min-w-[180px]">
             <label className="block text-xs font-bold text-outline uppercase mb-2">Department</label>
-            <select 
+            <CustomSelect 
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
+              options={["All", "Computer Science", "Artificial Intelligence", "Business Administration"]}
               className="w-full bg-surface-container border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-sans"
-            >
-              <option>All</option>
-              <option>Computer Science</option>
-              <option>Artificial Intelligence</option>
-              <option>Business Administration</option>
-            </select>
+            />
           </div>
 
           <div className="flex-1 min-w-[180px]">
             <label className="block text-xs font-bold text-outline uppercase mb-2">Course</label>
-            <select 
+            <CustomSelect 
               value={selectedCourse}
               onChange={(e) => setSelectedCourse(e.target.value)}
+              options={["All", "B.Tech CS", "M.Tech AI", "BBA"]}
               className="w-full bg-surface-container border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-sans"
-            >
-              <option>All</option>
-              <option>B.Tech CS</option>
-              <option>M.Tech AI</option>
-              <option>BBA</option>
-            </select>
+            />
           </div>
 
           <div className="flex-1 min-w-[180px]">
             <label className="block text-xs font-bold text-outline uppercase mb-2">Subject</label>
-            <select 
+            <CustomSelect 
               value={selectedSubj}
               onChange={(e) => setSelectedSubj(e.target.value)}
+              options={["All", "Data Structures", "Neural Networks", "BBA Marketing"]}
               className="w-full bg-surface-container border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-sans"
-            >
-              <option>All</option>
-              <option>Data Structures</option>
-              <option>Neural Networks</option>
-              <option>BBA Marketing</option>
-            </select>
+            />
           </div>
 
           <button 

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useERPStore } from '../store';
 import { LineChart, Plus, Download, FileText, CheckCircle, Clock } from 'lucide-react';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 export default function ReportsView() {
   const store = useERPStore();
@@ -59,16 +60,17 @@ export default function ReportsView() {
 
           <div>
             <label className="block text-xs font-bold text-outline uppercase mb-1.5">Statistical Segment</label>
-            <select 
+            <CustomSelect 
               value={type}
               onChange={(e) => setType(e.target.value as any)}
+              options={[
+                { value: "Academic", label: "Academic Quality & Grades" },
+                { value: "Financial", label: "Financial Budgets & Collections" },
+                { value: "Attendance", label: "Student Attendance Logs" },
+                { value: "Registrar", label: "Registrar Intake Demographics" }
+              ]}
               className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            >
-              <option value="Academic">Academic Quality & Grades</option>
-              <option value="Financial">Financial Budgets & Collections</option>
-              <option value="Attendance">Student Attendance Logs</option>
-              <option value="Registrar">Registrar Intake Demographics</option>
-            </select>
+            />
           </div>
 
           <button 

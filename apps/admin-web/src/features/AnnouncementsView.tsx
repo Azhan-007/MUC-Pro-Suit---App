@@ -5,6 +5,7 @@ import { useERPStore } from '../store';
 import { Megaphone, Plus, Bell, Clock, Calendar } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import Modal from '../components/Modal';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 export default function AnnouncementsView() {
   const store = useERPStore();
@@ -92,13 +93,14 @@ export default function AnnouncementsView() {
 
           <div>
             <label className="block text-xs font-bold text-outline uppercase mb-1.5">Alert Level Category</label>
-            <select 
+            <CustomSelect 
               {...register('category')}
+              options={[
+                { value: "primary", label: "Primary (Standard Information)" },
+                { value: "secondary", label: "Secondary (Urgent Notice)" }
+              ]}
               className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            >
-              <option value="primary">Primary (Standard Information)</option>
-              <option value="secondary">Secondary (Urgent Notice)</option>
-            </select>
+            />
           </div>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-outline-variant/30 mt-6">

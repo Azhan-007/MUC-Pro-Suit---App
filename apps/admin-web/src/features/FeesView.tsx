@@ -9,6 +9,7 @@ import {
   TrendingUp, AlertTriangle, ChevronLeft, ChevronRight, CheckCircle
 } from 'lucide-react';
 import Modal from '../components/Modal';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 interface FeeFormValues {
   studentName: string;
@@ -400,29 +401,22 @@ export default function FeesView() {
 
             <div>
               <label className="block text-xs font-bold text-outline uppercase mb-1.5">Payment Method</label>
-              <select 
+              <CustomSelect 
                 {...register('method', { required: 'Method is required' })}
+                options={["UPI", "Card", "Bank Transfer", "Cash"]}
                 className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-sans"
-              >
-                <option value="UPI">UPI</option>
-                <option value="Card">Card</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-                <option value="Cash">Cash</option>
-              </select>
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-outline uppercase mb-1.5">Payment Status</label>
-              <select 
+              <CustomSelect 
                 {...register('status')}
+                options={["Paid", "Partial", "Overdue"]}
                 className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-sans"
-              >
-                <option value="Paid">Paid</option>
-                <option value="Partial">Partial</option>
-                <option value="Overdue">Overdue</option>
-              </select>
+              />
             </div>
 
             <div>

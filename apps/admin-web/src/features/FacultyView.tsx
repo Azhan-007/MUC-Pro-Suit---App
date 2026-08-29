@@ -8,6 +8,7 @@ import {
   Trash2, Edit, Check, Eye, HelpCircle, Users
 } from 'lucide-react';
 import Modal from '../components/Modal';
+import { CustomSelect } from '../components/ui/CustomSelect';
 
 interface FacultyFormValues {
   name: string;
@@ -81,7 +82,7 @@ export default function FacultyView() {
       </div>
 
       {/* Grid of Profile Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div key={store.searchQuery} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in-0 duration-350 ease-out">
         {filteredFaculties.map((fac) => (
           <div key={fac.id} className="bg-surface-container-lowest border border-outline-variant hover:border-primary rounded-2xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 relative group">
             <div>
@@ -188,15 +189,12 @@ export default function FacultyView() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-outline uppercase mb-1.5">Department</label>
-              <select 
+              <CustomSelect 
                 {...register('department', { required: 'Department is required' })}
+                options={["Computer Science", "Artificial Intelligence", "Business Administration"]}
+                placeholder="Select Dept"
                 className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-sans"
-              >
-                <option value="">Select Dept</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Artificial Intelligence">Artificial Intelligence</option>
-                <option value="Business Administration">Business Administration</option>
-              </select>
+              />
               {errors.department && <p className="text-xs text-error mt-1 font-bold">{errors.department.message}</p>}
             </div>
 
@@ -235,14 +233,11 @@ export default function FacultyView() {
 
           <div>
             <label className="block text-xs font-bold text-outline uppercase mb-1.5">Log Status</label>
-            <select 
+            <CustomSelect 
               {...register('status')}
+              options={["Scheduled", "Pending", "Marked"]}
               className="w-full bg-surface border border-outline-variant rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            >
-              <option value="Scheduled">Scheduled</option>
-              <option value="Pending">Pending</option>
-              <option value="Marked">Marked</option>
-            </select>
+            />
           </div>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-outline-variant/30 mt-6">

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "MUC Pro Suite - Administrative Console",
-  description: "Mohammed University College ERP administrative console. Manage students, faculty, timetables, and academic operations.",
+  description: "Mazharul Uloom College Autonomous ERP administrative console. Manage students, faculty, timetables, and academic operations.",
 };
 
 export default function RootLayout({

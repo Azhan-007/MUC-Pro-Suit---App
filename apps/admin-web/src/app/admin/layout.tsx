@@ -5,8 +5,9 @@ import { useERPStore } from '@/store';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Modal from '@/components/Modal';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { 
-  HelpCircle, Send, Bell, Clock, AlertTriangle 
+  HelpCircle, Send, Bell, Clock, AlertTriangle, Check, Loader2
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Support form state
   const [supportText, setSupportText] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [submittingForm, setSubmittingForm] = useState<'student' | 'faculty' | 'fee' | 'announcement' | 'support' | null>(null);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
 
   // Notifications list
   const notifications = [
@@ -35,71 +45,111 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const handleSendSupport = (e: React.FormEvent) => {
     e.preventDefault();
     if (!supportText.trim()) return;
-    alert(`Pro Suite Support Desk: Ticket successfully dispatched to MUC IT Support nodes. Ref: MUC-TKT-${Math.floor(Math.random() * 9000) + 1000}`);
-    setSupportText('');
-    setIsSupportOpen(false);
+    const ticketRef = `MUC-TKT-${Math.floor(Math.random() * 9000) + 1000}`;
+
+    setSubmittingForm('support');
+    setTimeout(() => {
+      showToast(`Support Ticket ${ticketRef} successfully dispatched.`);
+      setSupportText('');
+      setSubmittingForm(null);
+      setIsSupportOpen(false);
+    }, 1000);
   };
 
   // Quick Create submissions
   const handleQuickStudentSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    addStudent({
-      name: data.get('name') as string,
-      email: data.get('email') as string,
-      department: data.get('department') as string,
-      course: data.get('course') as string,
-      year: 'Year 1',
-      status: 'Active',
-      attendancePercentage: 100
-    });
-    setQuickCreateType(null);
-    alert('Student Profile Registered!');
+    const name = data.get('name') as string;
+    const email = data.get('email') as string;
+    const department = data.get('department') as string;
+    const course = data.get('course') as string;
+
+    setSubmittingForm('student');
+    setTimeout(() => {
+      addStudent({
+        name,
+        email,
+        department,
+        course,
+        year: 'Year 1',
+        status: 'Active',
+        attendancePercentage: 100
+      });
+      setSubmittingForm(null);
+      setQuickCreateType(null);
+      showToast('Student Profile registered successfully.');
+    }, 1000);
   };
 
   const handleQuickFacultySubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    addFaculty({
-      name: data.get('name') as string,
-      email: data.get('email') as string,
-      department: data.get('department') as string,
-      course: data.get('course') as string,
-      subject: data.get('subject') as string,
-      time: '09:30 AM',
-      status: 'Scheduled'
-    });
-    setQuickCreateType(null);
-    alert('Faculty Profile Registered!');
+    const name = data.get('name') as string;
+    const email = data.get('email') as string;
+    const department = data.get('department') as string;
+    const course = data.get('course') as string;
+    const subject = data.get('subject') as string;
+
+    setSubmittingForm('faculty');
+    setTimeout(() => {
+      addFaculty({
+        name,
+        email,
+        department,
+        course,
+        subject,
+        time: '09:30 AM',
+        status: 'Scheduled'
+      });
+      setSubmittingForm(null);
+      setQuickCreateType(null);
+      showToast('Faculty Profile registered successfully.');
+    }, 1000);
   };
 
   const handleQuickFeeSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    const name = data.get('studentName') as string;
-    addFeeRecord({
-      studentId: data.get('studentId') as string,
-      studentName: name,
-      initials: name.split(' ').map(n => n[0]).join('').toUpperCase(),
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      amount: Number(data.get('amount')),
-      method: data.get('method') as string,
-      status: 'Paid'
-    });
-    setQuickCreateType(null);
-    alert('Fee Payment Receipt Recorded!');
+    const studentName = data.get('studentName') as string;
+    const studentId = data.get('studentId') as string;
+    const amount = Number(data.get('amount'));
+    const method = data.get('method') as string;
+
+    setSubmittingForm('fee');
+    setTimeout(() => {
+      addFeeRecord({
+        studentId,
+        studentName,
+        initials: studentName.split(' ').map(n => n[0]).join('').toUpperCase(),
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        amount,
+        method,
+        status: 'Paid'
+      });
+      setSubmittingForm(null);
+      setQuickCreateType(null);
+      showToast('Fee Payment receipt recorded successfully.');
+    }, 1000);
   };
 
   const handleQuickAnnSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    addAnnouncement({
-      title: data.get('title') as string,
-      content: data.get('content') as string,
-      category: 'primary'
-    });
-    setQuickCreateType(null);
-    alert('Announcement Published!');
+    const title = data.get('title') as string;
+    const content = data.get('content') as string;
+
+    setSubmittingForm('announcement');
+    setTimeout(() => {
+      addAnnouncement({
+        title,
+        content,
+        category: 'primary'
+      });
+      setSubmittingForm(null);
+      setQuickCreateType(null);
+      showToast('Announcement published successfully.');
+    }, 1000);
   };
 
   return (
@@ -128,7 +178,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         title="Live Support Ticket"
       >
         <form onSubmit={handleSendSupport} className="space-y-4">
-          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex gap-3 text-xs text-slate-600 leading-relaxed">
+          <div className="p-4 bg-slate-50/50 rounded-xl border border-slate-150 flex gap-3 text-xs text-slate-500 leading-relaxed">
             <HelpCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-slate-900">MUC IT Support Operations</p>
@@ -137,28 +187,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Description</label>
+            <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2 select-none">Description</label>
             <textarea
               value={supportText}
               onChange={(e) => setSupportText(e.target.value)}
               placeholder="e.g. Database connection latency in Lab 4..."
               rows={4}
               required
-              className="w-full bg-white border border-slate-300 rounded-lg py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-900"
+              className="w-full p-3.5 bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium"
             />
           </div>
 
-          <div className="pt-4 flex justify-end gap-3 border-t border-slate-200 mt-6">
+          <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-6">
             <button 
               type="button" 
               onClick={() => setIsSupportOpen(false)}
-              className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 transition-all"
+              className="px-4 h-10 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-all active:scale-[0.98] duration-150 cursor-pointer"
             >
               Cancel
             </button>
             <button 
               type="submit"
-              className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-all text-sm shadow-sm flex items-center gap-1.5"
+              className="px-5 h-10 bg-primary text-white rounded-xl font-bold hover:bg-primary/95 transition-all text-xs shadow-sm shadow-primary/10 active:scale-[0.98] duration-150 cursor-pointer flex items-center gap-1.5"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Dispatch Ticket</span>
@@ -209,91 +259,157 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {quickCreateType === 'student' && (
           <form onSubmit={handleQuickStudentSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Full Name</label>
-              <input name="name" required placeholder="e.g. Ahmed Khan" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Full Name</label>
+              <input name="name" required placeholder="e.g. Ahmed Khan" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Email</label>
-              <input name="email" type="email" required placeholder="e.g. ahmed.k@muc.edu" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Email</label>
+              <input name="email" type="email" required placeholder="e.g. ahmed.k@muc.edu" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Department</label>
-              <input name="department" required placeholder="e.g. Computer Science" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Department</label>
+              <input name="department" required placeholder="e.g. Computer Science" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Course Assigned</label>
-              <input name="course" required placeholder="e.g. MCA" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Course Assigned</label>
+              <input name="course" required placeholder="e.g. MCA" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
-            <button type="submit" className="w-full py-2.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary/95 transition-all">Register Profile</button>
+            <button 
+              type="submit" 
+              disabled={submittingForm === 'student'}
+              className="w-full h-11 bg-primary text-white rounded-xl font-bold hover:bg-primary/95 transition-all text-xs shadow-sm shadow-primary/10 active:scale-[0.98] duration-150 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {submittingForm === 'student' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Registering Student...</span>
+                </>
+              ) : (
+                <span>Register Profile</span>
+              )}
+            </button>
           </form>
         )}
 
         {quickCreateType === 'faculty' && (
           <form onSubmit={handleQuickFacultySubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Full Name</label>
-              <input name="name" required placeholder="e.g. Prof. Alan Turing" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Full Name</label>
+              <input name="name" required placeholder="e.g. Prof. Alan Turing" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Email</label>
-              <input name="email" type="email" required placeholder="e.g. alan.t@muc.edu" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Email</label>
+              <input name="email" type="email" required placeholder="e.g. alan.t@muc.edu" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Department</label>
-              <input name="department" required placeholder="e.g. Artificial Intelligence" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Department</label>
+              <input name="department" required placeholder="e.g. Artificial Intelligence" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Course Assigned</label>
-              <input name="course" required placeholder="e.g. M.Tech AI" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Course Assigned</label>
+              <input name="course" required placeholder="e.g. M.Tech AI" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Subject</label>
-              <input name="subject" required placeholder="e.g. Neural Networks" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Subject</label>
+              <input name="subject" required placeholder="e.g. Neural Networks" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
-            <button type="submit" className="w-full py-2.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary/95 transition-all">Register Faculty</button>
+            <button 
+              type="submit" 
+              disabled={submittingForm === 'faculty'}
+              className="w-full h-11 bg-primary text-white rounded-xl font-bold hover:bg-primary/95 transition-all text-xs shadow-sm shadow-primary/10 active:scale-[0.98] duration-150 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {submittingForm === 'faculty' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Registering Faculty...</span>
+                </>
+              ) : (
+                <span>Register Faculty</span>
+              )}
+            </button>
           </form>
         )}
 
         {quickCreateType === 'fee' && activeRole !== 'ADMIN' && (
           <form onSubmit={handleQuickFeeSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Student Full Name</label>
-              <input name="studentName" required placeholder="e.g. Jane Doe" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Student Full Name</label>
+              <input name="studentName" required placeholder="e.g. Jane Doe" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Student ID</label>
-              <input name="studentId" required placeholder="e.g. S10245" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Student ID</label>
+              <input name="studentId" required placeholder="e.g. S10245" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Amount ($)</label>
-              <input name="amount" type="number" required placeholder="e.g. 2500" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Amount ($)</label>
+              <input name="amount" type="number" required placeholder="e.g. 2500" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Method</label>
-              <select name="method" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900">
-                <option value="UPI">UPI</option>
-                <option value="Card">Card</option>
-                <option value="Bank Transfer">Bank Transfer</option>
-              </select>
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Method</label>
+              <CustomSelect 
+                name="method" 
+                defaultValue="UPI"
+                options={["UPI", "Card", "Bank Transfer"]}
+                className="w-full h-10 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer transition-all shadow-3xs"
+              />
             </div>
-            <button type="submit" className="w-full py-2.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary/95 transition-all">Record Payment</button>
+            <button 
+              type="submit" 
+              disabled={submittingForm === 'fee'}
+              className="w-full h-11 bg-primary text-white rounded-xl font-bold hover:bg-primary/95 transition-all text-xs shadow-sm shadow-primary/10 active:scale-[0.98] duration-150 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {submittingForm === 'fee' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Recording Payment...</span>
+                </>
+              ) : (
+                <span>Record Payment</span>
+              )}
+            </button>
           </form>
         )}
 
         {quickCreateType === 'announcement' && (
           <form onSubmit={handleQuickAnnSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Announcement Title</label>
-              <input name="title" required placeholder="e.g. Semester Exam Routine Released" className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Announcement Title</label>
+              <input name="title" required placeholder="e.g. Semester Exam Routine Released" className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Content Detail</label>
-              <textarea name="content" required placeholder="e.g. End Semester examinations start Nov 20..." rows={4} className="w-full bg-white border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900" />
+              <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5 select-none">Content Detail</label>
+              <textarea name="content" required placeholder="e.g. End Semester examinations start Nov 20..." rows={4} className="w-full p-3.5 bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-primary focus:bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all font-sans text-slate-900 shadow-3xs placeholder:text-slate-400 placeholder:font-medium" />
             </div>
-            <button type="submit" className="w-full py-2.5 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary/95 transition-all">Publish</button>
+            <button 
+              type="submit" 
+              disabled={submittingForm === 'announcement'}
+              className="w-full h-11 bg-primary text-white rounded-xl font-bold hover:bg-primary/95 transition-all text-xs shadow-sm shadow-primary/10 active:scale-[0.98] duration-150 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {submittingForm === 'announcement' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Publishing...</span>
+                </>
+              ) : (
+                <span>Publish</span>
+              )}
+            </button>
           </form>
         )}
       </Modal>
+
+      {/* Animated success Toast */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[100] bg-slate-900 border border-slate-800 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3.5 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm shadow-emerald-500/30">
+            <Check className="w-3.5 h-3.5 stroke-[3]" />
+          </div>
+          <div>
+            <p className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Success</p>
+            <p className="text-xs font-bold text-white mt-0.5">{toastMessage}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

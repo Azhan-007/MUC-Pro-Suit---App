@@ -53,6 +53,26 @@ interface ERPStore {
   updateCertificateStatus: (id: string, status: Certificate['status']) => void;
   generateReport: (title: string, type: ReportItem['type']) => void;
   addSecurityLog: (log: Omit<SecurityLog, 'id' | 'timestamp'>) => void;
+
+  addDepartment: (dept: Omit<Department, 'id' | 'countStudents' | 'countFaculty'>) => void;
+  updateDepartment: (id: string, updates: Partial<Department>) => void;
+  deleteDepartment: (id: string) => void;
+
+  addCourse: (course: Omit<Course, 'id' | 'activeStudents'>) => void;
+  updateCourse: (id: string, updates: Partial<Course>) => void;
+  deleteCourse: (id: string) => void;
+
+  addLibraryBook: (book: Omit<LibraryBook, 'id'>) => void;
+  updateLibraryBook: (id: string, updates: Partial<LibraryBook>) => void;
+  deleteLibraryBook: (id: string) => void;
+
+  addExamSchedule: (exam: Omit<ExamSchedule, 'id'>) => void;
+  updateExamSchedule: (id: string, updates: Partial<ExamSchedule>) => void;
+  deleteExamSchedule: (id: string) => void;
+
+  addPlacement: (plc: Omit<PlacementRecord, 'id'>) => void;
+  updatePlacementStatus: (id: string, status: PlacementRecord['status']) => void;
+  deletePlacement: (id: string) => void;
 }
 
 export const useERPStore = create<ERPStore>((set) => ({
@@ -701,5 +721,285 @@ export const useERPStore = create<ERPStore>((set) => ({
       timestamp
     };
     return { securityLogs: [newLog, ...state.securityLogs] };
+  }),
+
+  addDepartment: (dept) => set((state) => {
+    const id = `D0${state.departments.length + 1}`;
+    const newDept: Department = { ...dept, id, countStudents: 0, countFaculty: 0 };
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Provisioned Department: ${dept.name} (${dept.code})`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      departments: [...state.departments, newDept],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updateDepartment: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Updated Department configurations: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      departments: state.departments.map(d => d.id === id ? { ...d, ...updates } : d),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteDepartment: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Deleted Department: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      departments: state.departments.filter(d => d.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  addCourse: (course) => set((state) => {
+    const id = `C0${state.courses.length + 1}`;
+    const newCourse: Course = { ...course, id, activeStudents: 0 };
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Curriculum: Added Course ${course.name} (${course.code})`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      courses: [...state.courses, newCourse],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updateCourse: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Curriculum: Updated Course ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      courses: state.courses.map(c => c.id === id ? { ...c, ...updates } : c),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteCourse: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Curriculum: Deleted Course ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      courses: state.courses.filter(c => c.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  addLibraryBook: (book) => set((state) => {
+    const id = `B0${state.libraryBooks.length + 1}`;
+    const newBook: LibraryBook = { ...book, id };
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Library: Cataloged book "${book.title}"`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      libraryBooks: [...state.libraryBooks, newBook],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updateLibraryBook: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Library: Updated Asset ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      libraryBooks: state.libraryBooks.map(b => b.id === id ? { ...b, ...updates } : b),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteLibraryBook: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Library: Removed Asset ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      libraryBooks: state.libraryBooks.filter(b => b.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  addExamSchedule: (exam) => set((state) => {
+    const id = `E0${state.examSchedules.length + 1}`;
+    const newExam: ExamSchedule = { ...exam, id };
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Exams: Scheduled exam for ${exam.subject}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      examSchedules: [...state.examSchedules, newExam],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updateExamSchedule: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Exams: Modified exam schedule ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      examSchedules: state.examSchedules.map(e => e.id === id ? { ...e, ...updates } : e),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteExamSchedule: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Exams: Cancelled exam ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      examSchedules: state.examSchedules.filter(e => e.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  addPlacement: (plc) => set((state) => {
+    const id = `P0${state.placements.length + 1}`;
+    const newPlc: PlacementRecord = { ...plc, id };
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Placements: Recorded placement offer for ${plc.studentName}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      placements: [...state.placements, newPlc],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updatePlacementStatus: (id, status) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Placements: Offer status for placement ${id} updated to ${status}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      placements: state.placements.map(p => p.id === id ? { ...p, status } : p),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deletePlacement: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Placements: Removed placement record ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      placements: state.placements.filter(p => p.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
   })
 }));
