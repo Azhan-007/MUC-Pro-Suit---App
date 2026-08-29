@@ -242,7 +242,7 @@ export default function StudentView() {
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">On Probation</p>
-            <h4 className="text-2xl font-black text-slate-900 mt-0.5">{store.students.filter(s => s.status === 'Probation').length}</h4>
+            <h4 className="text-2xl font-black text-slate-900 mt-0.5">{store.students.filter(s => s.status === 'On Probation').length}</h4>
           </div>
         </div>
 
@@ -306,7 +306,7 @@ export default function StudentView() {
             <CustomSelect 
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              options={["All Statuses", "Active", "Probation", "Inactive"]}
+              options={["All Statuses", "Active", "On Probation", "Inactive"]}
               className="w-full bg-surface-container border border-outline-variant rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-sans"
             />
           </div>

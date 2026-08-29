@@ -152,21 +152,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }, 1000);
   };
 
+  // Mobile sidebar toggle state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background text-on-surface flex font-sans antialiased">
       {/* Sidebar - Fixed Left */}
-      <Sidebar onOpenSupport={() => setIsSupportOpen(true)} />
+      <Sidebar 
+        onOpenSupport={() => setIsSupportOpen(true)} 
+        isOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
+      />
 
       {/* Main Content Area - Shifted Right */}
-      <div className="flex-1 pl-72">
+      <div className="flex-1 pl-0 lg:pl-72 w-full transition-all duration-300">
         {/* Header - Fixed Top */}
         <Header 
           onQuickCreate={(type) => setQuickCreateType(type)} 
           onOpenNotifications={() => setIsNotificationsOpen(true)} 
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         />
 
         {/* Scrollable Workspace Container */}
-        <main className="pt-24 pb-12 px-8 min-h-[calc(100vh-64px)] max-w-7xl mx-auto">
+        <main className="pt-20 lg:pt-24 pb-12 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-64px)] max-w-7xl mx-auto">
           {children}
         </main>
       </div>
