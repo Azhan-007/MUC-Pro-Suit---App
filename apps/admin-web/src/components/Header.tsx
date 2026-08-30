@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useERPStore } from '../store';
 import { Search, Bell, Grid, Plus, Shield, User, GraduationCap, Users, Menu } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
@@ -21,6 +22,58 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
 
   const [showQuickCreateMenu, setShowQuickCreateMenu] = useState(false);
   const [showAppLauncher, setShowAppLauncher] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  const quickCreateBtnRef = useRef<HTMLButtonElement>(null);
+  const appLauncherBtnRef = useRef<HTMLButtonElement>(null);
+  const [quickCreateStyle, setQuickCreateStyle] = useState<React.CSSProperties>({});
+  const [appLauncherStyle, setAppLauncherStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateQuickCreatePos = useCallback(() => {
+    if (!quickCreateBtnRef.current) return;
+    const rect = quickCreateBtnRef.current.getBoundingClientRect();
+    setQuickCreateStyle({
+      position: 'fixed',
+      top: `${rect.bottom + 6}px`,
+      right: `${window.innerWidth - rect.right}px`,
+      zIndex: 9999,
+    });
+  }, []);
+
+  const updateAppLauncherPos = useCallback(() => {
+    if (!appLauncherBtnRef.current) return;
+    const rect = appLauncherBtnRef.current.getBoundingClientRect();
+    setAppLauncherStyle({
+      position: 'fixed',
+      top: `${rect.bottom + 6}px`,
+      right: `${window.innerWidth - rect.right}px`,
+      zIndex: 9999,
+    });
+  }, []);
+
+  const toggleQuickCreate = () => {
+    if (!showQuickCreateMenu) {
+      updateQuickCreatePos();
+      setShowQuickCreateMenu(true);
+      setShowAppLauncher(false);
+    } else {
+      setShowQuickCreateMenu(false);
+    }
+  };
+
+  const toggleAppLauncher = () => {
+    if (!showAppLauncher) {
+      updateAppLauncherPos();
+      setShowAppLauncher(true);
+      setShowQuickCreateMenu(false);
+    } else {
+      setShowAppLauncher(false);
+    }
+  };
 
   const academicYearsList = ['2024-25', '2023-24', '2022-23'];
   const semestersList = ['Fall Semester', 'Spring Semester', 'Summer Term'];
@@ -33,7 +86,7 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
   ];
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-white/95 border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-30 shadow-sm backdrop-blur-md transition-all duration-300 overflow-hidden">
+    <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-white/95 border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-30 shadow-sm backdrop-blur-md transition-all duration-300">
       {/* Left controls: Mobile Menu + Search + Filters */}
       <div className="flex items-center gap-3 xl:gap-4 min-w-0 flex-1">
         {/* Mobile Sidebar Toggle Button */}
@@ -102,7 +155,8 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
         {/* 5. Quick Create */}
         <div className="relative h-10">
           <button 
-            onClick={() => setShowQuickCreateMenu(!showQuickCreateMenu)}
+            ref={quickCreateBtnRef}
+            onClick={toggleQuickCreate}
             className="h-10 flex items-center gap-2 px-3.5 sm:px-4 bg-primary text-white rounded-xl font-bold hover:bg-primary/95 transition-all text-xs shadow-sm shadow-primary/10 active:scale-95 duration-150 whitespace-nowrap cursor-pointer"
             title="Open Quick Create Register menu"
           >
@@ -110,10 +164,13 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
             <span className="hidden sm:inline">Quick Create</span>
           </button>
 
-          {showQuickCreateMenu && (
+          {showQuickCreateMenu && mounted && createPortal(
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowQuickCreateMenu(false)} />
-              <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50 overflow-hidden animate-in fade-in duration-100">
+              <div className="fixed inset-0 z-[9998]" onClick={() => setShowQuickCreateMenu(false)} />
+              <div
+                style={quickCreateStyle}
+                className="w-52 bg-white border border-slate-200 rounded-xl shadow-2xl py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100 font-sans"
+              >
                 <div className="px-4 py-1.5 text-[9px] font-bold text-slate-400 uppercase border-b border-slate-100 tracking-wider">
                   Register Form
                 </div>
@@ -144,7 +201,8 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
                   <span>Announcement</span>
                 </button>
               </div>
-            </>
+            \n</>,
+            document.body
           )}
         </div>
 
@@ -161,7 +219,8 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
         {/* 7. Apps/Grid Directory */}
         <div className="relative shrink-0">
           <button 
-            onClick={() => setShowAppLauncher(!showAppLauncher)}
+            ref={appLauncherBtnRef}
+            onClick={toggleAppLauncher}
             className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
               showAppLauncher 
                 ? 'bg-slate-100 border-slate-200 text-slate-800 shadow-3xs' 
@@ -171,10 +230,14 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
           >
             <Grid className="w-4 h-4 text-slate-600" />
           </button>
-          {showAppLauncher && (
+
+          {showAppLauncher && mounted && createPortal(
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowAppLauncher(false)} />
-              <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 animate-in fade-in zoom-in-95 duration-100">
+              <div className="fixed inset-0 z-[9998]" onClick={() => setShowAppLauncher(false)} />
+              <div
+                style={appLauncherStyle}
+                className="w-72 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-100 font-sans"
+              >
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 select-none">
                   Institutional Portals
                 </div>
@@ -231,7 +294,8 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
                   </button>
                 </div>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
 
@@ -265,4 +329,3 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
     </header>
   );
 }
-

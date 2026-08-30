@@ -1,8 +1,9 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { 
   Student, Faculty, AttendanceRecord, FeeRecord, Announcement, EventItem,
   Department, Course, TimetableSlot, ExamSchedule, ResultRecord, 
-  LibraryBook, PlacementRecord, Certificate, ReportItem, UserRole, SecurityLog
+  LibraryBook, LibraryTransaction, PlacementRecord, Certificate, ReportItem, UserRole, SecurityLog
 } from './types';
 
 interface ERPStore {
@@ -35,6 +36,7 @@ interface ERPStore {
   certificates: Certificate[];
   reports: ReportItem[];
   securityLogs: SecurityLog[];
+  libraryTransactions: LibraryTransaction[];
 
   // Mutations
   addStudent: (student: Omit<Student, 'id' | 'initials'>) => void;
@@ -47,12 +49,23 @@ interface ERPStore {
 
   markAttendance: (record: AttendanceRecord) => void;
   addFeeRecord: (record: Omit<FeeRecord, 'receiptNo'>) => void;
+  updateFeeRecord: (receiptNo: string, updates: Partial<FeeRecord>) => void;
+  deleteFeeRecord: (receiptNo: string) => void;
+
+  addResult: (result: Omit<ResultRecord, 'id'>) => void;
+  updateResult: (id: string, updates: Partial<ResultRecord>) => void;
+  deleteResult: (id: string) => void;
+  publishResult: (id: string) => void;
   addAnnouncement: (ann: Omit<Announcement, 'id' | 'timestamp'>) => void;
+  updateAnnouncement: (id: string, updates: Partial<Announcement>) => void;
+  deleteAnnouncement: (id: string) => void;
+
   addEvent: (evt: Omit<EventItem, 'id'>) => void;
-  addCertificate: (cert: Omit<Certificate, 'id'>) => void;
-  updateCertificateStatus: (id: string, status: Certificate['status']) => void;
-  generateReport: (title: string, type: ReportItem['type']) => void;
-  addSecurityLog: (log: Omit<SecurityLog, 'id' | 'timestamp'>) => void;
+  updateEvent: (id: string, updates: Partial<EventItem>) => void;
+  deleteEvent: (id: string) => void;
+
+  issueLibraryBook: (tx: Omit<LibraryTransaction, 'id' | 'status'>) => void;
+  returnLibraryBook: (txId: string) => void;
 
   addDepartment: (dept: Omit<Department, 'id' | 'countStudents' | 'countFaculty'>) => void;
   updateDepartment: (id: string, updates: Partial<Department>) => void;
@@ -66,16 +79,31 @@ interface ERPStore {
   updateLibraryBook: (id: string, updates: Partial<LibraryBook>) => void;
   deleteLibraryBook: (id: string) => void;
 
+  addTimetableSlot: (slot: Omit<TimetableSlot, 'id'>) => void;
+  updateTimetableSlot: (id: string, updates: Partial<TimetableSlot>) => void;
+  deleteTimetableSlot: (id: string) => void;
+
   addExamSchedule: (exam: Omit<ExamSchedule, 'id'>) => void;
   updateExamSchedule: (id: string, updates: Partial<ExamSchedule>) => void;
   deleteExamSchedule: (id: string) => void;
 
   addPlacement: (plc: Omit<PlacementRecord, 'id'>) => void;
+  updatePlacement: (id: string, updates: Partial<PlacementRecord>) => void;
   updatePlacementStatus: (id: string, status: PlacementRecord['status']) => void;
   deletePlacement: (id: string) => void;
+
+  addCertificate: (cert: Omit<Certificate, 'id'>) => void;
+  updateCertificate: (id: string, updates: Partial<Certificate>) => void;
+  updateCertificateStatus: (id: string, status: Certificate['status']) => void;
+  deleteCertificate: (id: string) => void;
+
+  generateReport: (title: string, type: ReportItem['type'], extra?: Partial<ReportItem>) => void;
+  addSecurityLog: (log: Omit<SecurityLog, 'id' | 'timestamp'>) => void;
 }
 
-export const useERPStore = create<ERPStore>((set) => ({
+export const useERPStore = create<ERPStore>()(
+  persist(
+    (set) => ({
   // Navigation & Role Configuration
   activeTab: 'dashboard',
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -416,9 +444,26 @@ export const useERPStore = create<ERPStore>((set) => ({
     { id: 'LOG-1005', timestamp: '2026-07-11 08:30 AM', user: 'admin@muc.edu', action: 'Student Profile S10711 Registered', category: 'ACADEMIC', status: 'SUCCESS', ipAddress: '192.168.1.105' }
   ],
 
+  libraryTransactions: [
+    {
+      id: 'TX-101',
+      bookId: 'B01',
+      bookTitle: 'Introduction to Algorithms',
+      isbn: '978-0262033848',
+      studentId: 'S10245',
+      studentName: 'Ahmed Khan',
+      issueDate: '2026-10-01',
+      dueDate: '2026-10-15',
+      status: 'Active'
+    }
+  ],
+
   // Mutations
   addStudent: (student) => set((state) => {
-    const id = `S${10000 + state.students.length + 1}`;
+    // Collision-safe ID: never reuses a deleted student's ID
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `STU-${ts}-${rand}`;
     const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
     const newStudent: Student = { 
       ...student, 
@@ -487,7 +532,9 @@ export const useERPStore = create<ERPStore>((set) => ({
   }),
 
   addFaculty: (faculty) => set((state) => {
-    const id = `F${state.faculties.length + 201}`;
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `FAC-${ts}-${rand}`;
     const initials = faculty.name.split(' ').map(n => n[0]).join('').toUpperCase();
     const newFaculty: Faculty = { 
       ...faculty, 
@@ -555,7 +602,7 @@ export const useERPStore = create<ERPStore>((set) => ({
     };
   }),
 
-  markAttendance: (record) => set((state) => {
+  markAttendance: (record: AttendanceRecord) => set((state) => {
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
     const timestamp = new Date().toLocaleTimeString();
@@ -569,20 +616,26 @@ export const useERPStore = create<ERPStore>((set) => ({
       ipAddress: '192.168.1.50'
     };
 
+    const exists = state.attendanceRecords.some(r => r.id === record.id);
+    const updatedRecords = exists
+      ? state.attendanceRecords.map(r => r.id === record.id ? record : r)
+      : [record, ...state.attendanceRecords];
+
     return {
-      attendanceRecords: [record, ...state.attendanceRecords],
+      attendanceRecords: updatedRecords,
       securityLogs: [newLog, ...state.securityLogs]
     };
   }),
 
   addFeeRecord: (record) => set((state) => {
-    const receiptNo = `#REC-${9000 + state.feeRecords.length + 21}`;
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const receiptNo = `#REC-${ts}-${rand}`;
     const newFee: FeeRecord = { 
       ...record, 
       receiptNo 
     };
 
-    // Log this action
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
     const timestamp = new Date().toLocaleTimeString();
@@ -590,7 +643,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: logId,
       timestamp,
       user: email,
-      action: `Recorded Fee Payment of $${record.amount} for student ${record.studentName}`,
+      action: `Recorded Fee Payment of $${record.amount} for student ${record.studentName} (${receiptNo})`,
       category: 'FINANCIAL',
       status: 'SUCCESS',
       ipAddress: '192.168.1.50'
@@ -602,15 +655,7 @@ export const useERPStore = create<ERPStore>((set) => ({
     };
   }),
 
-  addAnnouncement: (ann) => set((state) => {
-    const id = `ANN-${state.announcements.length + 3}`;
-    const newAnn: Announcement = {
-      ...ann,
-      id,
-      timestamp: 'JUST NOW'
-    };
-
-    // Log this action
+  updateFeeRecord: (receiptNo, updates) => set((state) => {
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
     const timestamp = new Date().toLocaleTimeString();
@@ -618,7 +663,143 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: logId,
       timestamp,
       user: email,
-      action: `Created new announcement: "${ann.title}"`,
+      action: `Updated Fee Receipt: ${receiptNo}`,
+      category: 'FINANCIAL',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      feeRecords: state.feeRecords.map(f => f.receiptNo === receiptNo ? { ...f, ...updates } : f),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteFeeRecord: (receiptNo) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Deleted Fee Receipt: ${receiptNo}`,
+      category: 'FINANCIAL',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      feeRecords: state.feeRecords.filter(f => f.receiptNo !== receiptNo),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  addResult: (result) => set((state) => {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `RES-${ts}-${rand}`;
+    const newResult: ResultRecord = { ...result, id };
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Results: Created result for ${result.studentName} (${result.courseName} - ${result.grade})`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      results: [newResult, ...state.results],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updateResult: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Results: Updated academic result ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      results: state.results.map(r => r.id === id ? { ...r, ...updates } : r),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteResult: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Results: Removed academic result ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      results: state.results.filter(r => r.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  publishResult: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Results: Published result ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      results: state.results.map(r => r.id === id ? { ...r, resultStatus: 'Published', publishedAt: new Date().toLocaleDateString() } : r),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  addAnnouncement: (ann) => set((state) => {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `ANN-${ts}-${rand}`;
+    const newAnn: Announcement = {
+      ...ann,
+      id,
+      timestamp: 'JUST NOW',
+      priority: ann.priority || 'Medium',
+      status: ann.status || 'Published',
+      audience: ann.audience || 'All College',
+    };
+
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Created announcement: "${ann.title}" (${id})`,
       category: 'ACADEMIC',
       status: 'SUCCESS',
       ipAddress: '192.168.1.50'
@@ -630,15 +811,88 @@ export const useERPStore = create<ERPStore>((set) => ({
     };
   }),
 
+  updateAnnouncement: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Updated announcement: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      announcements: state.announcements.map(a => a.id === id ? { ...a, ...updates } : a),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteAnnouncement: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Deleted announcement: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      announcements: state.announcements.filter(a => a.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
   addEvent: (evt) => set((state) => {
-    const id = `EVT-${state.events.length + 3}`;
-    const newEvt: EventItem = { ...evt, id };
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `EVT-${ts}-${rand}`;
+    const newEvt: EventItem = { 
+      ...evt, 
+      id,
+      status: evt.status || 'Upcoming',
+      audience: evt.audience || 'All College',
+    };
     return { events: [newEvt, ...state.events] };
   }),
 
-  addCertificate: (cert) => set((state) => {
-    const id = `CRT0${state.certificates.length + 3}`;
-    const newCert: Certificate = { ...cert, id };
+  updateEvent: (id, updates) => set((state) => {
+    return {
+      events: state.events.map(e => e.id === id ? { ...e, ...updates } : e)
+    };
+  }),
+
+  deleteEvent: (id) => set((state) => {
+    return {
+      events: state.events.filter(e => e.id !== id)
+    };
+  }),
+
+  issueLibraryBook: (tx) => set((state) => {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `TX-${ts}-${rand}`;
+    const newTx: LibraryTransaction = {
+      ...tx,
+      id,
+      status: 'Active'
+    };
+
+    // Update available copies for the book
+    const updatedBooks = state.libraryBooks.map(b => {
+      if (b.id === tx.bookId) {
+        return { ...b, availableCopies: Math.max(0, b.availableCopies - 1) };
+      }
+      return b;
+    });
 
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
@@ -647,7 +901,77 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: logId,
       timestamp,
       user: email,
-      action: `Requested Certificate (${cert.type}) for ${cert.studentName}`,
+      action: `Library: Issued "${tx.bookTitle}" to student ${tx.studentName}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      libraryBooks: updatedBooks,
+      libraryTransactions: [newTx, ...state.libraryTransactions],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  returnLibraryBook: (txId) => set((state) => {
+    const targetTx = state.libraryTransactions.find(t => t.id === txId);
+    if (!targetTx || targetTx.status === 'Returned') return state;
+
+    const returnDate = new Date().toISOString().split('T')[0];
+
+    // Increment available copies for the book
+    const updatedBooks = state.libraryBooks.map(b => {
+      if (b.id === targetTx.bookId) {
+        return { ...b, availableCopies: Math.min(b.totalCopies, b.availableCopies + 1) };
+      }
+      return b;
+    });
+
+    const updatedTxList = state.libraryTransactions.map(t => 
+      t.id === txId ? { ...t, status: 'Returned' as const, returnDate } : t
+    );
+
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Library: Returned "${targetTx.bookTitle}" from student ${targetTx.studentName}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      libraryBooks: updatedBooks,
+      libraryTransactions: updatedTxList,
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  addCertificate: (cert) => set((state) => {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `CRT-${ts}-${rand}`;
+    const certNumber = cert.certNumber || `MUC-CERT-2026-${Math.floor(Math.random() * 900000) + 100000}`;
+    const newCert: Certificate = { 
+      ...cert, 
+      id,
+      certNumber,
+      status: cert.status || 'Requested'
+    };
+
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Requested Certificate (${cert.type}) for ${cert.studentName} (${id})`,
       category: 'ACADEMIC',
       status: 'SUCCESS',
       ipAddress: '192.168.1.50'
@@ -655,6 +979,26 @@ export const useERPStore = create<ERPStore>((set) => ({
 
     return { 
       certificates: [newCert, ...state.certificates],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updateCertificate: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Updated certificate request: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      certificates: state.certificates.map(c => c.id === id ? { ...c, ...updates } : c),
       securityLogs: [newLog, ...state.securityLogs]
     };
   }),
@@ -670,7 +1014,7 @@ export const useERPStore = create<ERPStore>((set) => ({
       user: email,
       action: `Certificate (${cert?.type || ''}) status for ${cert?.studentName || ''} updated to ${status}`,
       category: 'SECURITY',
-      status: status === 'Generated' ? 'SUCCESS' : 'WARNING',
+      status: status === 'Generated' || status === 'Issued' ? 'SUCCESS' : 'WARNING',
       ipAddress: '192.168.1.50'
     };
 
@@ -680,19 +1024,7 @@ export const useERPStore = create<ERPStore>((set) => ({
     };
   }),
 
-  generateReport: (title, type) => set((state) => {
-    const id = `REP0${state.reports.length + 3}`;
-    const today = new Date();
-    const formattedDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0') + ' ' + String(today.getHours()).padStart(2, '0') + ':' + String(today.getMinutes()).padStart(2, '0');
-    const newReport: ReportItem = {
-      id,
-      title,
-      type,
-      generatedAt: formattedDate,
-      size: (Math.random() * 3 + 1).toFixed(1) + ' MB'
-    };
-
-    // Log this action
+  deleteCertificate: (id) => set((state) => {
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
     const timestamp = new Date().toLocaleTimeString();
@@ -700,7 +1032,41 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: logId,
       timestamp,
       user: email,
-      action: `Generated Institutional Report: "${title}" (Type: ${type})`,
+      action: `Cancelled/Deleted certificate request: ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+
+    return {
+      certificates: state.certificates.filter(c => c.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  generateReport: (title, type, extra) => set((state) => {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `REP-${ts}-${rand}`;
+    const today = new Date();
+    const formattedDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0') + ' ' + String(today.getHours()).padStart(2, '0') + ':' + String(today.getMinutes()).padStart(2, '0');
+    const newReport: ReportItem = {
+      id,
+      title,
+      type,
+      generatedAt: formattedDate,
+      size: (Math.random() * 2 + 0.8).toFixed(1) + ' MB',
+      ...extra
+    };
+
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp,
+      user: email,
+      action: `Generated Institutional Report: "${title}" (${type})`,
       category: 'FINANCIAL',
       status: 'SUCCESS',
       ipAddress: '192.168.1.50'
@@ -724,7 +1090,10 @@ export const useERPStore = create<ERPStore>((set) => ({
   }),
 
   addDepartment: (dept) => set((state) => {
-    const id = `D0${state.departments.length + 1}`;
+    // Generate a collision-safe ID that stays unique even after deletions
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `DEPT-${timestamp}-${random}`;
     const newDept: Department = { ...dept, id, countStudents: 0, countFaculty: 0 };
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
@@ -780,7 +1149,9 @@ export const useERPStore = create<ERPStore>((set) => ({
   }),
 
   addCourse: (course) => set((state) => {
-    const id = `C0${state.courses.length + 1}`;
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `CRS-${ts}-${rand}`;
     const newCourse: Course = { ...course, id, activeStudents: 0 };
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
@@ -891,8 +1262,68 @@ export const useERPStore = create<ERPStore>((set) => ({
     };
   }),
 
+  addTimetableSlot: (slot) => set((state) => {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `SLOT-${ts}-${rand}`;
+    const newSlot: TimetableSlot = { ...slot, id };
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Timetable: Allocated lecture slot for ${slot.courseName} (${slot.day} ${slot.time})`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      timetable: [...state.timetable, newSlot],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updateTimetableSlot: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Timetable: Updated lecture slot ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      timetable: state.timetable.map(t => t.id === id ? { ...t, ...updates } : t),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  deleteTimetableSlot: (id) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Timetable: Deleted lecture slot ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      timetable: state.timetable.filter(t => t.id !== id),
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
   addExamSchedule: (exam) => set((state) => {
-    const id = `E0${state.examSchedules.length + 1}`;
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `EXAM-${ts}-${rand}`;
     const newExam: ExamSchedule = { ...exam, id };
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
@@ -948,7 +1379,9 @@ export const useERPStore = create<ERPStore>((set) => ({
   }),
 
   addPlacement: (plc) => set((state) => {
-    const id = `P0${state.placements.length + 1}`;
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const id = `PLC-${ts}-${rand}`;
     const newPlc: PlacementRecord = { ...plc, id };
     const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
     const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
@@ -956,13 +1389,31 @@ export const useERPStore = create<ERPStore>((set) => ({
       id: logId,
       timestamp: new Date().toLocaleTimeString(),
       user: email,
-      action: `Placements: Recorded placement offer for ${plc.studentName}`,
+      action: `Placements: Recorded placement offer for ${plc.studentName} (${id})`,
       category: 'ACADEMIC',
       status: 'SUCCESS',
       ipAddress: '192.168.1.50'
     };
     return {
-      placements: [...state.placements, newPlc],
+      placements: [newPlc, ...state.placements],
+      securityLogs: [newLog, ...state.securityLogs]
+    };
+  }),
+
+  updatePlacement: (id, updates) => set((state) => {
+    const email = state.activeRole === 'SUPER_ADMIN' ? 'superadmin@muc.edu' : state.activeRole === 'MASTER_ADMIN' ? 'masteradmin@muc.edu' : 'admin@muc.edu';
+    const logId = `LOG-${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLog: SecurityLog = {
+      id: logId,
+      timestamp: new Date().toLocaleTimeString(),
+      user: email,
+      action: `Placements: Updated placement record ${id}`,
+      category: 'ACADEMIC',
+      status: 'SUCCESS',
+      ipAddress: '192.168.1.50'
+    };
+    return {
+      placements: state.placements.map(p => p.id === id ? { ...p, ...updates } : p),
       securityLogs: [newLog, ...state.securityLogs]
     };
   }),
@@ -1002,4 +1453,11 @@ export const useERPStore = create<ERPStore>((set) => ({
       securityLogs: [newLog, ...state.securityLogs]
     };
   })
-}));
+}),
+    {
+      name: 'muc_erp_store_v1',
+      storage: createJSONStorage(() => (typeof window !== 'undefined' ? localStorage : ({} as Storage))),
+    }
+  )
+);
+
