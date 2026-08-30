@@ -25,10 +25,17 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
   const academicYearsList = ['2024-25', '2023-24', '2022-23'];
   const semestersList = ['Fall Semester', 'Spring Semester', 'Summer Term'];
 
+  // Formatted role options to avoid raw underscore string truncation
+  const roleOptions = [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'MASTER_ADMIN', label: 'Master Admin' },
+    { value: 'SUPER_ADMIN', label: 'Super Admin' },
+  ];
+
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-white/95 border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-30 shadow-sm backdrop-blur-md transition-all duration-300">
+    <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-white/95 border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-30 shadow-sm backdrop-blur-md transition-all duration-300 overflow-hidden">
       {/* Left controls: Mobile Menu + Search + Filters */}
-      <div className="flex items-center gap-3 xl:gap-4 shrink-0">
+      <div className="flex items-center gap-3 xl:gap-4 min-w-0 flex-1">
         {/* Mobile Sidebar Toggle Button */}
         {onToggleMobileSidebar && (
           <button
@@ -41,8 +48,8 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
         )}
 
         {/* 1. Search */}
-        <div className="relative w-36 sm:w-48 md:w-56 lg:w-60 xl:w-64 h-10 flex items-center transition-all duration-300">
-          <Search className="absolute left-3 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+        <div className="relative min-w-0 w-32 sm:w-44 md:w-52 lg:w-56 xl:w-64 h-10 flex items-center transition-all duration-300 shrink">
+          <Search className="absolute left-3.5 text-slate-400 w-4 h-4 pointer-events-none" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -72,26 +79,26 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
             value={semester}
             onChange={(e) => setSemester(e.target.value)}
             options={semestersList}
-            className="h-10 w-36 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer transition-all shadow-3xs"
+            className="h-10 w-40 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 focus:outline-none cursor-pointer transition-all shadow-3xs"
             title="Filter by Academic Semester"
           />
         </div>
 
-        {/* 4. Role Selector (Admin / Master Admin) */}
+        {/* 4. Role Selector */}
         <div className="hidden md:flex items-center gap-2">
           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 select-none whitespace-nowrap">Role</span>
           <CustomSelect
             value={activeRole}
             onChange={(e) => setActiveRole(e.target.value as 'ADMIN' | 'MASTER_ADMIN' | 'SUPER_ADMIN')}
-            options={['ADMIN', 'MASTER_ADMIN']}
-            className="h-10 w-32 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer transition-all shadow-3xs"
+            options={roleOptions}
+            className="h-10 w-40 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer transition-all shadow-3xs"
             title="Switch User Role"
           />
         </div>
       </div>
 
       {/* Right Controls: Quick Create -> Notifications -> Apps -> Divider -> Profile */}
-      <div className="flex items-center gap-2 xl:gap-3 shrink-0">
+      <div className="flex items-center gap-2 xl:gap-3 shrink-0 ml-3">
         {/* 5. Quick Create */}
         <div className="relative h-10">
           <button 
@@ -99,7 +106,7 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
             className="h-10 flex items-center gap-2 px-3.5 sm:px-4 bg-primary text-white rounded-xl font-bold hover:bg-primary/95 transition-all text-xs shadow-sm shadow-primary/10 active:scale-95 duration-150 whitespace-nowrap cursor-pointer"
             title="Open Quick Create Register menu"
           >
-            <Plus className="w-4 h-4 shrink-0" />
+            <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
             <span className="hidden sm:inline">Quick Create</span>
           </button>
 
@@ -229,26 +236,28 @@ export default function Header({ onQuickCreate, onOpenNotifications, onToggleMob
         </div>
 
         {/* 8. Divider */}
-        <div className="h-6 w-[1px] bg-slate-200 shrink-0" />
+        <div className="h-6 w-[1px] bg-slate-200 shrink-0 mx-0.5" />
 
         {/* 9. User Profile */}
         <div 
           className="flex items-center gap-3 ml-0.5 cursor-default shrink-0"
-          title={`User Session: Admin Console (Role: ${activeRole === 'MASTER_ADMIN' ? 'Master Admin' : 'Admin'})`}
+          title={`User Session: Admin Console (Role: ${activeRole === 'SUPER_ADMIN' ? 'Super Admin' : activeRole === 'MASTER_ADMIN' ? 'Master Admin' : 'Admin'})`}
         >
           <div className="text-right hidden sm:block">
             <p className="font-bold text-xs text-slate-900 leading-tight">Admin Console</p>
             <p className="text-[9px] uppercase tracking-wider text-slate-400 font-extrabold mt-0.5">
-              {activeRole === 'MASTER_ADMIN' ? 'Master Admin' : 'Admin'}
+              {activeRole === 'SUPER_ADMIN' ? 'Super Admin' : activeRole === 'MASTER_ADMIN' ? 'Master Admin' : 'Admin'}
             </p>
           </div>
           <div className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xs font-bold text-white shadow-3xs transition-all duration-300 shrink-0 ${
-            activeRole === 'MASTER_ADMIN' 
+            activeRole === 'SUPER_ADMIN'
+              ? 'bg-gradient-to-tr from-purple-600 to-indigo-500 border-purple-200 shadow-purple-500/10'
+              : activeRole === 'MASTER_ADMIN' 
               ? 'bg-gradient-to-tr from-indigo-600 to-blue-500 border-indigo-200 shadow-indigo-500/10' 
               : 'bg-gradient-to-tr from-blue-600 to-sky-500 border-blue-200 shadow-blue-500/10'
           }`}>
             <span>
-              {activeRole === 'MASTER_ADMIN' ? 'MA' : 'AD'}
+              {activeRole === 'SUPER_ADMIN' ? 'SA' : activeRole === 'MASTER_ADMIN' ? 'MA' : 'AD'}
             </span>
           </div>
         </div>
