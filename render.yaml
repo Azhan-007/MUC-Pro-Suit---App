@@ -1,0 +1,31 @@
+# Render Blueprint — MUC Pro Suite Backend
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: muc-backend
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: .
+    buildCommand: npm install --include=dev && npx prisma generate --schema=packages/database/prisma/schema.prisma && npm run build -w packages/database && npm run build -w apps/backend
+    startCommand: npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma && cd apps/backend && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: muc-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: "*"
+
+databases:
+  - name: muc-db
+    databaseName: muc_erp
+    user: muc_user
+    plan: free
+    region: singapore
