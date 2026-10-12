@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, Component, ErrorInfo } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { AppUpdateProvider } from '../src/providers/AppUpdateProvider';
 
 // ============================================================
 // Global error handler for diagnostic logging
@@ -110,6 +111,9 @@ function AppContent() {
 
   // Safety timeout: Always hide splash after 3 seconds no matter what
   useEffect(() => {
+    import('../src/store/campusStore').then(({ useCampusStore }) => {
+      // Data fetching is now handled by individual components via react-query
+    });
     const timer = setTimeout(() => {
       try { SplashScreen.hideAsync(); } catch (_) {}
     }, 3000);
@@ -128,13 +132,15 @@ function AppContent() {
       <SafeAreaProvider>
         <CampusAlertProvider>
           <QueryClientProvider client={queryClient}>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="student" options={{ headerShown: false }} />
-              <Stack.Screen name="faculty" options={{ headerShown: false }} />
-            </Stack>
+            <AppUpdateProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="student" options={{ headerShown: false }} />
+                <Stack.Screen name="faculty" options={{ headerShown: false }} />
+              </Stack>
+            </AppUpdateProvider>
           </QueryClientProvider>
         </CampusAlertProvider>
       </SafeAreaProvider>

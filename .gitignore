@@ -31,10 +31,28 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
+!.env.example
 .env*.local
 
 # typescript
 *.tsbuildinfo
+
+# large binaries & tools
+cloudflared.exe
+*.zip
+
+# reports & reference files
+*.pdf
+*.docx
+ref images/
+ref images-old/
+reference report.pdf
+scratch/
+
+# Gemini / Antigravity
+.gemini/
 
 # generated native folders
 /ios

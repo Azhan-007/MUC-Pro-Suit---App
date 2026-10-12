@@ -144,6 +144,7 @@ export const FacultySettingsScreen: React.FC = () => {
           </Pressable>
         </CampusCard>
 
+        <Text style={styles.versionFooter}>Beta Version (v1.0) • Powered by Aziron Tech Private Ltd</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
 
@@ -313,5 +314,12 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  versionFooter: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: Colors.AppOnSurfaceVariant + '80',
+    marginTop: 14,
+    fontWeight: '500',
   },
 });

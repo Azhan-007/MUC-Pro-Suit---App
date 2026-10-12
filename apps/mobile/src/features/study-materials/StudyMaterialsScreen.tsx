@@ -15,8 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageHeader, CampusCard } from '../../components';
 import { Colors } from '../../theme';
-import { mockStudyMaterials } from '../../data/mockData';
 import { StudyMaterial } from '../../types';
+import { mockStudentMaterials } from '../../data/mockStudentData';
 import {
   BookOpen,
   Download,
@@ -29,11 +29,6 @@ import {
   CheckCircle,
 } from 'lucide-react-native';
 
-if (Platform.OS === 'android') {
-  if (UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-  }
-}
 
 interface CustomAlertConfig {
   visible: boolean;
@@ -60,7 +55,7 @@ export const StudyMaterialsScreen: React.FC = () => {
   });
 
   // Filter logic based on search
-  const filteredMaterials = mockStudyMaterials.filter((item) => {
+  const filteredMaterials = mockStudentMaterials.filter((item) => {
     return (
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.subjectName.toLowerCase().includes(searchQuery.toLowerCase())

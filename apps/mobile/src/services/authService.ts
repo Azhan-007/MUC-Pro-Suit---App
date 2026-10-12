@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { z } from 'zod';
-import { apiClient } from './api';
+import { apiClient } from '../lib/apiClient';
 
 // ─────────────────────────────────────────────
 // Zod schemas
@@ -13,34 +13,35 @@ export const LoginSchema = z.object({
 export type LoginInput = z.infer<typeof LoginSchema>;
 
 // ─────────────────────────────────────────────
-// Auth Service — stubs ready for real Fastify API
+// Auth Service
 // ─────────────────────────────────────────────
 export const authService = {
   async login(input: LoginInput) {
-    // TODO: Replace with real endpoint when backend is ready
-    // const { data } = await apiClient.post('/auth/login', input);
-    // await SecureStore.setItemAsync('access_token', data.accessToken);
-    // await SecureStore.setItemAsync('refresh_token', data.refreshToken);
-    // return data.student;
-
-    // Mock — validates against hardcoded credentials
-    if (input.registerNumber === 'MU202401' && input.password === 'password123') {
-      await SecureStore.setItemAsync('access_token', 'mock_access_token');
-      await SecureStore.setItemAsync('refresh_token', 'mock_refresh_token');
-      return { success: true };
+    const { data } = await apiClient.post('/auth/login', {
+      identifier: input.registerNumber,
+      password: input.password,
+      clientType: 'MOBILE'
+    });
+    if (data.accessToken && data.refreshToken) {
+      await SecureStore.setItemAsync('access_token', data.accessToken);
+      await SecureStore.setItemAsync('refresh_token', data.refreshToken);
     }
-    throw new Error('Invalid Username or Password. Please try again.');
+    return { success: true, user: data.user || data.student || null };
   },
 
   async logout() {
-    // TODO: await apiClient.post('/auth/logout');
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (e) {
+      // ignore
+    }
     await SecureStore.deleteItemAsync('access_token');
     await SecureStore.deleteItemAsync('refresh_token');
   },
 
   async refreshToken() {
     const refreshToken = await SecureStore.getItemAsync('refresh_token');
-    const { data } = await apiClient.post('/auth/refresh', { refreshToken });
+    const { data } = await apiClient.post('/auth/refresh', { refreshToken, clientType: 'MOBILE' });
     await SecureStore.setItemAsync('access_token', data.accessToken);
     return data.accessToken;
   },

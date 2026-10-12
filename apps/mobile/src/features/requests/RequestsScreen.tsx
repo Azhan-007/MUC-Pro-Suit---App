@@ -12,8 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageHeader, CampusCard, CustomButton } from '../../components';
 import { Colors } from '../../theme';
-import { mockCertificateRequests } from '../../data/mockData';
 import { CertificateRequest } from '../../types';
+import { mockStudentRequests } from '../../data/mockStudentData';
 import {
   FileText,
   Clock,
@@ -33,7 +33,7 @@ const CERTIFICATE_TYPES = [
 ];
 
 export const RequestsScreen: React.FC = () => {
-  const [requests, setRequests] = useState<CertificateRequest[]>(mockCertificateRequests);
+  const [requests, setRequests] = useState<CertificateRequest[]>(mockStudentRequests);
   const [selectedCert, setSelectedCert] = useState(CERTIFICATE_TYPES[0]);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);

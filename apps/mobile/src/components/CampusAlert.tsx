@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     zIndex: 10000,
   },
   alertDismiss: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   alertBox: {
     width: '90%',

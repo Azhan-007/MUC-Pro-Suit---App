@@ -14,7 +14,9 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Colors } from "../../theme";
 import { CampusCard, CustomButton, useCampusAlert } from "../../components";
-import { getDefaultAttendanceEntries } from "../../data/mockFacultyData";
+import { AcademicService, FacultyClass } from "../../services/academicService";
+import { useAuthStore } from "../../store/authStore";
+import { ActivityIndicator } from "react-native";
 import { StudentAttendanceEntry } from "../../types";
 import { 
   Check, X, Clock, CheckCircle, ChevronDown, SlidersHorizontal, List, Grid, ArrowLeft, Pencil, Trash2 
@@ -38,6 +40,13 @@ export const FacultyClassesScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { showAlert } = useCampusAlert();
+  const faculty = useAuthStore(s => s.faculty);
+
+  // Real faculty classes loaded from API
+  const [facultyClasses, setFacultyClasses] = React.useState<FacultyClass[]>([]);
+  const [loadingStudents, setLoadingStudents] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
   const params = useLocalSearchParams<{
     subjectName?: string;
     classCode?: string;
@@ -47,7 +56,9 @@ export const FacultyClassesScreen: React.FC = () => {
     shift?: string;
   }>();
 
-  const [selectedClass, setSelectedClass] = React.useState<string>(params.classCode ?? "III B.Sc CS");
+  const [selectedClass, setSelectedClass] = React.useState<string>(params.classCode ?? "");
+  const [selectedClassId, setSelectedClassId] = React.useState<string>(params.classCode ?? "");
+  const [selectedSubjectId, setSelectedSubjectId] = React.useState<string>("");
   const [showClassPicker, setShowClassPicker] = React.useState(false);
   
   const [selectedShift, setSelectedShift] = React.useState<"Shift I" | "Shift II" | "Girls">(
@@ -60,7 +71,7 @@ export const FacultyClassesScreen: React.FC = () => {
       ? initialHour
       : "1") as any
   );
-  const [selectedSubject, setSelectedSubject] = React.useState<string>(params.subjectName ?? "Database Management System");
+  const [selectedSubject, setSelectedSubject] = React.useState<string>(params.subjectName ?? "");
   const [selectedDate, setSelectedDate] = React.useState<Date>(() => {
     if (params.date) {
       const parsed = new Date(params.date);
@@ -92,8 +103,8 @@ export const FacultyClassesScreen: React.FC = () => {
   const [tempTopic, setTempTopic] = React.useState(lessonTopic);
   const [tempDesc, setTempDesc] = React.useState(lessonDesc);
 
-  // Student Entries (uses MUC default mock students for selected class)
-  const [entries, setEntries] = React.useState<StudentAttendanceEntry[]>(getDefaultAttendanceEntries);
+  // Student Entries — loaded from real API
+  const [entries, setEntries] = React.useState<StudentAttendanceEntry[]>([]);
 
   React.useEffect(() => {
     if (params.classCode) {
@@ -125,31 +136,52 @@ export const FacultyClassesScreen: React.FC = () => {
     }
   }, [params.classCode, params.subjectName, params.period, params.date, params.originalFaculty, params.shift]);
 
+  // Load faculty's classes on mount
   React.useEffect(() => {
-    // Only run default logic if we did not come from routing params
-    if (!params.subjectName) {
-      if (selectedClass.includes("III")) {
-        setSelectedSubject("Database Management System");
-      } else {
-        setSelectedSubject("Operating System");
+    let active = true;
+    AcademicService.getFacultyClasses().then(classes => {
+      if (!active) return;
+      setFacultyClasses(classes);
+      // Auto-select first class and subject if not pre-set by params
+      if (!params.classCode && classes.length > 0) {
+        const first = classes[0];
+        setSelectedClass(first.className);
+        setSelectedClassId(first.classId);
+        setSelectedSubject(first.subjectName);
+        setSelectedSubjectId(first.subjectId);
+      } else if (params.classCode) {
+        const match = classes.find(c => c.className === params.classCode || c.classId === params.classCode);
+        if (match) {
+          setSelectedClassId(match.classId);
+          setSelectedSubjectId(match.subjectId);
+        }
       }
-    }
-  }, [selectedClass, params.subjectName]);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
+  // Load students when classId changes
   React.useEffect(() => {
-    // Dynamically update student roll number prefix to match Shift:
-    // Shift I: 12xx, Shift II: 14xx, Girls: 15xx
-    let prefix = "12";
-    if (selectedShift === "Shift II") prefix = "14";
-    if (selectedShift === "Girls") prefix = "15";
-
-    setEntries(
-      getDefaultAttendanceEntries().map((student, idx) => ({
-        ...student,
-        rollNo: `${prefix}${(idx + 1).toString().padStart(2, "0")}`,
-      }))
-    );
-  }, [selectedShift, selectedClass]);
+    if (!selectedClassId) return;
+    let active = true;
+    setLoadingStudents(true);
+    AcademicService.getClassStudents(selectedClassId).then(students => {
+      if (!active) return;
+      setEntries(students.map(s => ({
+        studentId: s.studentId,
+        enrollmentId: s.enrollmentId,
+        name: s.name,
+        rollNo: s.registrationNumber,
+        section: selectedClass,
+        status: 'PRESENT' as const,
+      })));
+    }).catch(() => {
+      if (active) setEntries([]);
+    }).finally(() => {
+      if (active) setLoadingStudents(false);
+    });
+    return () => { active = false; };
+  }, [selectedClassId]);
 
   const formatDate = (date: Date) => {
     const dtStr = date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -196,7 +228,7 @@ export const FacultyClassesScreen: React.FC = () => {
   };
 
   const resetAttendance = () => {
-    setEntries(getDefaultAttendanceEntries());
+    setEntries(prev => prev.map(e => ({ ...e, status: 'PRESENT' as const })));
   };
 
   // Action Tools handlers
@@ -511,11 +543,13 @@ export const FacultyClassesScreen: React.FC = () => {
           <View style={styles.markedByContent}>
             <View style={styles.markedByLeft}>
               <View style={styles.facultyAvatar}>
-                <Text style={styles.facultyAvatarText}>PR</Text>
+                <Text style={styles.facultyAvatarText}>
+                  {faculty?.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'FA'}
+                </Text>
               </View>
               <View>
-                <Text style={styles.facultyName}>Dr P Rizwan Ahmed</Text>
-                <Text style={styles.facultyDept}>Department of Computer Science (S1)</Text>
+                <Text style={styles.facultyName}>{faculty?.name || 'Faculty'}</Text>
+                <Text style={styles.facultyDept}>{faculty?.department || ''}</Text>
               </View>
             </View>
             <Pressable onPress={() => showAlert("Report View", "Navigating to marked history logs...")}>
@@ -600,11 +634,35 @@ export const FacultyClassesScreen: React.FC = () => {
               <Pressable style={[styles.confirmBtn, styles.confirmBtnCancel]} onPress={() => setShowConfirm(false)}>
                 <Text style={styles.confirmBtnTextCancel}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.confirmBtn, styles.confirmBtnSubmit]} onPress={() => {
-                setShowConfirm(false);
-                setSubmitted(true);
-              }}>
-                <Text style={styles.confirmBtnTextSubmit}>Submit</Text>
+              <Pressable
+                style={[styles.confirmBtn, styles.confirmBtnSubmit, submitting && { opacity: 0.6 }]}
+                disabled={submitting}
+                onPress={async () => {
+                  if (!selectedClassId || !selectedSubjectId) {
+                    setShowConfirm(false);
+                    showAlert('Error', 'Please select a valid class and subject.');
+                    return;
+                  }
+                  setSubmitting(true);
+                  try {
+                    await AcademicService.markAttendance({
+                      classId: selectedClassId,
+                      subjectId: selectedSubjectId,
+                      date: selectedDate.toISOString().split('T')[0],
+                      period: `H${selectedHour}`,
+                      entries: entries.map(e => ({ studentId: e.studentId, status: e.status as any })),
+                    });
+                    setShowConfirm(false);
+                    setSubmitted(true);
+                  } catch (err: any) {
+                    setShowConfirm(false);
+                    showAlert('Submission Failed', err?.response?.data?.message || 'Could not submit attendance. Please try again.');
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+              >
+                {submitting ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.confirmBtnTextSubmit}>Submit</Text>}
               </Pressable>
             </View>
           </View>
@@ -662,24 +720,29 @@ export const FacultyClassesScreen: React.FC = () => {
                 </Pressable>
               </View>
 
-              {/* Subject Selector */}
+              {/* Subject Selector — scoped to selected class's subjects */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Subject</Text>
                 <View style={styles.fullChipGroup}>
-                  {["Database Management System", "Operating System"].map((sub) => {
-                    const active = selectedSubject === sub;
-                    return (
-                      <Pressable
-                        key={sub}
-                        style={[styles.fullSelectorChip, active && styles.fullSelectorChipActive]}
-                        onPress={() => setSelectedSubject(sub)}
-                      >
-                        <Text style={[styles.fullSelectorChipText, active && styles.fullSelectorChipTextActive]} numberOfLines={1}>
-                          {sub === "Database Management System" ? "DBMS" : "OS"}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                  {facultyClasses
+                    .filter(fc => fc.classId === selectedClassId)
+                    .map((fc) => {
+                      const active = selectedSubjectId === fc.subjectId;
+                      return (
+                        <Pressable
+                          key={fc.subjectId}
+                          style={[styles.fullSelectorChip, active && styles.fullSelectorChipActive]}
+                          onPress={() => {
+                            setSelectedSubject(fc.subjectName);
+                            setSelectedSubjectId(fc.subjectId);
+                          }}
+                        >
+                          <Text style={[styles.fullSelectorChipText, active && styles.fullSelectorChipTextActive]} numberOfLines={1}>
+                            {fc.subjectName}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                 </View>
               </View>
 
@@ -756,19 +819,27 @@ export const FacultyClassesScreen: React.FC = () => {
               </Pressable>
             </View>
             <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
-              {CLASSES.map((cls) => {
-                const active = selectedClass === cls;
+              {/* Real classes from faculty's teaching assignments */}
+              {[...new Map(facultyClasses.map(fc => [fc.classId, fc])).values()].map((fc) => {
+                const active = selectedClassId === fc.classId;
                 return (
                   <Pressable
-                    key={cls}
+                    key={fc.classId}
                     style={[styles.pickerItem, active && styles.pickerItemActive]}
                     onPress={() => {
-                      setSelectedClass(cls);
+                      setSelectedClass(fc.className);
+                      setSelectedClassId(fc.classId);
+                      // Auto-select first subject for this class
+                      const firstSub = facultyClasses.find(f => f.classId === fc.classId);
+                      if (firstSub) {
+                        setSelectedSubject(firstSub.subjectName);
+                        setSelectedSubjectId(firstSub.subjectId);
+                      }
                       setShowClassPicker(false);
                     }}
                   >
                     <Text style={[styles.pickerItemText, active && styles.pickerItemTextActive]}>
-                      {cls}
+                      {fc.className}
                     </Text>
                   </Pressable>
                 );
@@ -781,14 +852,7 @@ export const FacultyClassesScreen: React.FC = () => {
   );
 };
 
-const CLASSES = [
-  "I B.Sc CS",
-  "II B.Sc CS",
-  "III B.Sc CS",
-  "I BCA",
-  "II BCA",
-  "III BCA",
-];
+// CLASSES constant removed — now using real data from AcademicService.getFacultyClasses()
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F8FAFC" },

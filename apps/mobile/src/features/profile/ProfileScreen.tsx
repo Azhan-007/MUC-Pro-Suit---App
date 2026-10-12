@@ -107,7 +107,7 @@ export const ProfileScreen: React.FC = () => {
         return (
           <View style={styles.modalItemsList}>
             <ModalRow label="App Name" value="MUC Pro Suit" />
-            <ModalRow label="Version" value="1.0" />
+            <ModalRow label="Version" value="Beta (v1.0)" />
             <ModalRow label="Build" value="102" />
             <ModalRow label="Powered by" value="Aziron Tech Private Ltd" />
           </View>
@@ -237,7 +237,7 @@ export const ProfileScreen: React.FC = () => {
             </View>
             <View style={styles.menuTextWrap}>
               <Text style={styles.menuTitle}>About</Text>
-              <Text style={styles.menuSubtitle}>App Details, Share App</Text>
+              <Text style={styles.menuSubtitle}>App Details, Beta Version Info</Text>
             </View>
             <ChevronRight size={18} color={Colors.AppOnSurfaceVariant} />
           </Pressable>
@@ -262,7 +262,7 @@ export const ProfileScreen: React.FC = () => {
         </CampusCard>
 
         {/* Muted version tag */}
-        <Text style={styles.versionText}>Version 1.0 • Powered by Aziron Tech Private Ltd</Text>
+        <Text style={styles.versionText}>Beta Version (v1.0) • Powered by Aziron Tech Private Ltd</Text>
 
         <View style={{ height: 24 }} />
       </ScrollView>

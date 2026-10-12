@@ -41,7 +41,6 @@ import {
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useCampusStore } from '../../store/campusStore';
-import { mockTimetable } from '../../data/mockData';
 import {
   CampusCard,
   CustomButton,
@@ -78,20 +77,29 @@ const CAROUSEL_ITEMS = [
 ];
 
 const getClassStatusRealtime = (timeStr: string): 'COMPLETED' | 'ONGOING' | 'UPCOMING' => {
-  const normalized = timeStr.replace(/\s+/g, '').replace(/[\n\-–]/g, '-');
-  const parts = normalized.split('-');
+  if (!timeStr) return 'UPCOMING';
+  const parts = timeStr.split(/[-–—]/).map(s => s.trim());
   if (parts.length < 2) return 'UPCOMING';
 
-  const [startStr, endStr] = parts;
   const parseToMinutes = (str: string) => {
-    let [h, m] = str.split(':').map(Number);
-    if (h >= 1 && h <= 4) h += 12; // Adjust afternoon classes
-    return h * 60 + m;
+    const isPM = /PM/i.test(str);
+    const isAM = /AM/i.test(str);
+    const clean = str.replace(/[^0-9:]/g, '');
+    let [hStr, mStr] = clean.split(':');
+    let h = parseInt(hStr || '0', 10);
+    const m = parseInt(mStr || '0', 10);
+
+    if (isPM && h < 12) h += 12;
+    if (isAM && h === 12) h = 0;
+    if (!isPM && !isAM && h >= 1 && h <= 5) h += 12;
+
+    return h * 60 + (isNaN(m) ? 0 : m);
   };
 
-  const startMin = parseToMinutes(startStr);
-  const endMin = parseToMinutes(endStr);
-  const currentMin = new Date().getHours() * 60 + new Date().getMinutes();
+  const startMin = parseToMinutes(parts[0]);
+  const endMin = parseToMinutes(parts[1]);
+  const now = new Date();
+  const currentMin = now.getHours() * 60 + now.getMinutes();
 
   if (currentMin >= endMin) return 'COMPLETED';
   if (currentMin >= startMin && currentMin < endMin) return 'ONGOING';
@@ -183,9 +191,15 @@ export const DashboardScreen: React.FC = () => {
     notificationCount,
     announcements,
     dailyAttendance,
+    allTimetableClasses,
     quickAccessShortcuts,
     setQuickAccessShortcuts,
+    fetchCampusData
   } = useCampusStore();
+
+  React.useEffect(() => {
+    fetchCampusData();
+  }, []);
 
   if (!student) return null;
 
@@ -225,23 +239,21 @@ export const DashboardScreen: React.FC = () => {
     return `${days[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()}`;
   };
 
-  const getStatusColor = (status: AttendanceStatus) => {
+  const getStatusColor = (status?: string) => {
     switch (status) {
       case 'PRESENT':
+      case 'ON_DUTY':
         return { bg: '#10B981', border: '#10B981', text: '#FFFFFF' };
       case 'ABSENT':
         return { bg: '#EF4444', border: '#EF4444', text: '#FFFFFF' };
       case 'LATE':
         return { bg: '#F59E0B', border: '#F59E0B', text: '#FFFFFF' };
       case 'PENDING':
+      case 'UNMARKED':
       default:
         return { bg: '#FFFFFF', border: '#E5E7EB', text: '#1F2937' };
     }
   };
-
-  const conductedCount = dailyAttendance.filter((a) => a.status !== 'PENDING').length;
-  const presentCount = dailyAttendance.filter((a) => a.status === 'PRESENT' || a.status === 'LATE').length;
-  const fractionText = `${conductedCount}/5`;
 
   const getTodayDayKey = () => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -251,19 +263,114 @@ export const DashboardScreen: React.FC = () => {
   const todayDayKey = getTodayDayKey();
   const isWeekendDay = todayDayKey === 'Sun' || todayDayKey === 'Sat';
 
+  const todayRecord = React.useMemo(() => {
+    if (!dailyAttendance || dailyAttendance.length === 0) return null;
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const localDateStr = `${yyyy}-${mm}-${dd}`;
+    const isoDateStr = now.toISOString().split('T')[0];
+
+    return (dailyAttendance as any[]).find((d: any) => {
+      if (!d?.date) return false;
+      const dStr = typeof d.date === 'string' ? d.date.split('T')[0] : new Date(d.date).toISOString().split('T')[0];
+      return (
+        dStr === localDateStr ||
+        dStr === isoDateStr ||
+        new Date(d.date).toDateString() === now.toDateString()
+      );
+    });
+  }, [dailyAttendance]);
+
+  const todayHours = React.useMemo(() => {
+    // 5 standard academic hours per college domain rules (H1 to H5)
+    const hours = [1, 2, 3, 4, 5];
+    return hours.map((hourNum) => {
+      const periodCode = `H${hourNum}`;
+
+      // Find attendance entry for this period
+      const periodEntry = todayRecord?.periods?.find((p: any) => {
+        if (!p?.period) return false;
+        const pCode = String(p.period).trim().toUpperCase();
+        return (
+          pCode === periodCode ||
+          pCode === String(hourNum) ||
+          pCode === `PERIOD ${hourNum}` ||
+          pCode === `HOUR ${hourNum}`
+        );
+      });
+
+      // Scheduled class from timetable if available
+      const scheduledClass = (allTimetableClasses || []).find((c: any) => {
+        const dayStr = (c.day || '').toUpperCase();
+        const matchesDay = dayStr === todayDayKey.toUpperCase() || dayStr.startsWith(todayDayKey.toUpperCase());
+        const matchesPeriod = c.periodCode === periodCode || c.period === periodCode;
+        return matchesDay && matchesPeriod;
+      });
+
+      const rawStatus = (periodEntry?.status || '').toUpperCase();
+      let status: 'PRESENT' | 'ABSENT' | 'LATE' | 'PENDING' = 'PENDING';
+      let isMarked = false;
+
+      if (rawStatus === 'PRESENT' || rawStatus === 'ON_DUTY') {
+        status = 'PRESENT';
+        isMarked = true;
+      } else if (rawStatus === 'ABSENT') {
+        status = 'ABSENT';
+        isMarked = true;
+      } else if (rawStatus === 'LATE') {
+        status = 'LATE';
+        isMarked = true;
+      }
+
+      const subject = periodEntry?.subject || scheduledClass?.subject || `Hour ${hourNum}`;
+      const professor = periodEntry?.professor || scheduledClass?.professor || getProfessorForSubject(subject);
+
+      return {
+        hourIndex: hourNum,
+        period: periodCode,
+        status,
+        rawStatus,
+        isMarked,
+        subject,
+        professor,
+        time: scheduledClass?.time || '',
+      };
+    });
+  }, [todayRecord, allTimetableClasses, todayDayKey]);
+
+  const conductedCount = todayHours.filter((h) => h.isMarked).length;
+  const fractionText = `${conductedCount}/5`;
+
+
+
   const todayClasses = React.useMemo(() => {
-    const rawClasses = mockTimetable[isWeekendDay ? 'Wed' : todayDayKey] || [];
-    return rawClasses.map((cls) => {
+    if (!allTimetableClasses || allTimetableClasses.length === 0) return [];
+
+    const currentDay = todayDayKey.toUpperCase().trim();
+    const filtered = allTimetableClasses.filter((cls: any) => {
+      const dayStr = (cls.day || '').toUpperCase().trim();
+      return dayStr === currentDay || dayStr.startsWith(currentDay) || currentDay.startsWith(dayStr);
+    });
+
+    filtered.sort((a: any, b: any) => {
+      const numA = parseInt(a.periodCode?.replace(/\D/g, '') || '0', 10);
+      const numB = parseInt(b.periodCode?.replace(/\D/g, '') || '0', 10);
+      return numA - numB;
+    });
+
+    return filtered.map((cls: any) => {
       if (cls.isLunchBreak) return cls;
       return {
         ...cls,
         status: getClassStatusRealtime(cls.time),
       };
     });
-  }, [todayDayKey, isWeekendDay, currentMinute]);
+  }, [allTimetableClasses, todayDayKey, currentMinute]);
 
-  const ongoingClass = React.useMemo(() => todayClasses.find((cls) => cls.status === 'ONGOING'), [todayClasses]);
-  const upcomingClasses = React.useMemo(() => todayClasses.filter((cls) => cls.status === 'UPCOMING'), [todayClasses]);
+  const ongoingClass = React.useMemo(() => todayClasses.find((cls: any) => cls.status === 'ONGOING'), [todayClasses]);
+  const upcomingClasses = React.useMemo(() => todayClasses.filter((cls: any) => cls.status === 'UPCOMING'), [todayClasses]);
 
   const getProgressColor = (pct: number) => {
     if (pct >= 75) return '#10B981'; // Green
@@ -411,12 +518,12 @@ export const DashboardScreen: React.FC = () => {
             </View>
           </View>
           <View style={styles.hoursRow}>
-            {dailyAttendance.slice(0, 5).map((item, index) => {
+            {todayHours.map((item, index) => {
               const statusColor = getStatusColor(item.status);
               return (
                 <Pressable
                   key={index}
-                  onPress={() => setSelectedAttendance({ ...item, hourIndex: index + 1 })}
+                  onPress={() => setSelectedAttendance(item)}
                   style={({ pressed }) => [
                     styles.hourCircle,
                     {
@@ -427,7 +534,7 @@ export const DashboardScreen: React.FC = () => {
                   ]}
                 >
                   <Text style={[styles.hourText, { color: statusColor.text }]}>
-                    {index + 1} hr
+                    {item.hourIndex} hr
                   </Text>
                 </Pressable>
               );
@@ -440,7 +547,7 @@ export const DashboardScreen: React.FC = () => {
           <View style={styles.todayAttHeader}>
             <View>
               <Text style={styles.todayAttTitle}>Overall Attendance</Text>
-              <Text style={styles.todayAttDate}>Semester 4 • B.Tech CSE</Text>
+              <Text style={styles.todayAttDate}>{student.semester || 'Semester 1'} • {student.department || 'Department'}</Text>
             </View>
             <View
               style={[
@@ -545,59 +652,68 @@ export const DashboardScreen: React.FC = () => {
           onActionPress={() => router.push('/student/schedule' as any)}
         />
 
-        {/* Ongoing class */}
-        {ongoingClass && (
-          <CampusCard backgroundColor={Colors.BluePrimaryContainer} style={styles.card} borderColor={Colors.BluePrimary + '33'}>
-            <View style={styles.classRow}>
-              <View style={styles.classLeft}>
-                <StatusChip text="ONGOING" level="NOW" />
-                <Text style={[styles.classSubject, { color: Colors.BlueOnPrimaryContainer }]}>{ongoingClass.subject}</Text>
-                <View style={styles.classMetaRow}>
-                  <User size={14} color={Colors.BlueOnPrimaryContainer} style={{ opacity: 0.8 }} />
-                  <Text style={[styles.classMeta, { color: Colors.BlueOnPrimaryContainer, opacity: 0.8 }]}> {ongoingClass.professor}  </Text>
-                  <MapPin size={14} color={Colors.BlueOnPrimaryContainer} style={{ opacity: 0.8 }} />
-                  <Text style={[styles.classMeta, { color: Colors.BlueOnPrimaryContainer, opacity: 0.8 }]}> {ongoingClass.room}</Text>
-                </View>
-              </View>
-              <View style={[styles.timeBox, { backgroundColor: 'rgba(30, 64, 175, 0.1)' }]}>
-                <Text style={[styles.timeText, { color: Colors.BlueOnPrimaryContainer }]}>{ongoingClass.time.replace('\n', ' - ')}</Text>
-              </View>
-            </View>
-          </CampusCard>
-        )}
-
-        {/* Upcoming classes */}
-        {upcomingClasses.slice(0, 2).map((cls, idx) => (
-          <CampusCard key={idx} borderColor={Colors.AppOutline} style={styles.card} elevation="sm">
-            <View style={styles.classRow}>
-              <View style={styles.classLeft}>
-                <View style={styles.upcomingHeader}>
-                  <View style={styles.pendingDot} />
-                  <Text style={styles.upcomingTime}>{cls.time.replace('\n', ' - ')}</Text>
-                  <View style={{ marginLeft: 12 }}>
-                    <StatusChip text="Upcoming" level="WARNING" />
+        {todayClasses.length > 0 ? (
+          todayClasses.map((cls: any, idx: number) => {
+            const isOngoing = cls.status === 'ONGOING';
+            const isCompleted = cls.status === 'COMPLETED';
+            return (
+              <CampusCard 
+                key={cls.id || idx} 
+                backgroundColor={isOngoing ? Colors.BluePrimaryContainer : '#FFFFFF'} 
+                borderColor={isOngoing ? Colors.BluePrimary : Colors.AppOutline} 
+                style={styles.card} 
+                elevation={isOngoing ? 'md' : 'sm'}
+              >
+                <View style={styles.classRow}>
+                  <View style={styles.classLeft}>
+                    <View style={styles.upcomingHeader}>
+                      <View style={[
+                        styles.pendingDot, 
+                        { backgroundColor: isOngoing ? Colors.BluePrimary : isCompleted ? Colors.ColorPresent : Colors.ColorPending }
+                      ]} />
+                      <Text style={[styles.upcomingTime, isOngoing && { color: Colors.BlueOnPrimaryContainer }]}>
+                        {cls.periodCode ? `${cls.periodCode} • ` : ''}{cls.time ? cls.time.replace('\n', ' - ') : ''}
+                      </Text>
+                      <View style={{ marginLeft: 10 }}>
+                        <StatusChip 
+                          text={isOngoing ? 'ONGOING' : isCompleted ? 'Completed' : 'Upcoming'} 
+                          level={isOngoing ? 'NOW' : isCompleted ? 'SAFE' : 'WARNING'} 
+                        />
+                      </View>
+                    </View>
+                    <Text style={[
+                      styles.classSubject, 
+                      { color: isOngoing ? Colors.BlueOnPrimaryContainer : Colors.AppOnBackground, marginTop: 8 }
+                    ]}>
+                      {cls.subject}
+                    </Text>
+                    <View style={styles.classMetaRow}>
+                      <User size={14} color={isOngoing ? Colors.BlueOnPrimaryContainer : Colors.AppOnSurfaceVariant} />
+                      <Text style={[
+                        styles.classMeta, 
+                        { color: isOngoing ? Colors.BlueOnPrimaryContainer : Colors.AppOnSurfaceVariant }
+                      ]}> {cls.professor}  </Text>
+                      <MapPin size={14} color={isOngoing ? Colors.BlueOnPrimaryContainer : Colors.AppOnSurfaceVariant} />
+                      <Text style={[
+                        styles.classMeta, 
+                        { color: isOngoing ? Colors.BlueOnPrimaryContainer : Colors.AppOnSurfaceVariant }
+                      ]}> {cls.room || 'TBA'}</Text>
+                    </View>
                   </View>
+                  {isOngoing && (
+                    <View style={[styles.timeBox, { backgroundColor: 'rgba(30, 64, 175, 0.1)' }]}>
+                      <Text style={[styles.timeText, { color: Colors.BlueOnPrimaryContainer }]}>NOW</Text>
+                    </View>
+                  )}
                 </View>
-                <Text style={[styles.classSubject, { color: Colors.AppOnBackground, marginTop: 8 }]}>
-                  {cls.subject}
-                </Text>
-                <View style={styles.classMetaRow}>
-                  <User size={14} color={Colors.AppOnSurfaceVariant} />
-                  <Text style={[styles.classMeta, { color: Colors.AppOnSurfaceVariant }]}> {cls.professor}  </Text>
-                  <MapPin size={14} color={Colors.AppOnSurfaceVariant} />
-                  <Text style={[styles.classMeta, { color: Colors.AppOnSurfaceVariant }]}> {cls.room}</Text>
-                </View>
-              </View>
-            </View>
-          </CampusCard>
-        ))}
-
-        {/* No active classes placeholder */}
-        {!ongoingClass && upcomingClasses.length === 0 && (
+              </CampusCard>
+            );
+          })
+        ) : (
           <CampusCard borderColor={Colors.AppOutline} style={styles.card} elevation="sm">
             <View style={{ alignItems: 'center', paddingVertical: 16 }}>
               <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.AppOnSurfaceVariant }}>
-                No more classes scheduled for today!
+                No classes scheduled for today!
               </Text>
             </View>
           </CampusCard>
@@ -683,20 +799,22 @@ export const DashboardScreen: React.FC = () => {
                 </View>
 
                 <Text style={styles.portalTitle}>Hour {selectedAttendance.hourIndex} Attendance</Text>
-                <Text style={styles.portalSubtitle}>{selectedAttendance.subject}</Text>
+                <Text style={styles.portalSubtitle}>
+                  {selectedAttendance.isMarked ? selectedAttendance.subject : 'Not Marked Yet'}
+                </Text>
 
                 {/* Clean full-width details list */}
                 <View style={styles.gridContainer}>
                   <View style={styles.gridItem}>
                     <Text style={styles.gridLabel}>SUBJECT</Text>
-                    <Text style={styles.gridVal}>{selectedAttendance.subject}</Text>
+                    <Text style={styles.gridVal}>{selectedAttendance.subject || 'Not scheduled / marked'}</Text>
                   </View>
                   
                   <View style={styles.gridDividerLine} />
                   
                   <View style={styles.gridItem}>
-                    <Text style={styles.gridLabel}>MARKED BY</Text>
-                    <Text style={styles.gridVal}>{getProfessorForSubject(selectedAttendance.subject)}</Text>
+                    <Text style={styles.gridLabel}>{selectedAttendance.isMarked ? 'MARKED BY' : 'SCHEDULED FACULTY'}</Text>
+                    <Text style={styles.gridVal}>{selectedAttendance.professor || 'Pending faculty attendance entry'}</Text>
                   </View>
                 </View>
 
@@ -704,13 +822,15 @@ export const DashboardScreen: React.FC = () => {
                 <View style={styles.modalStatusRow}>
                   <Text style={styles.modalStatusLabel}>ATTENDANCE STATUS</Text>
                   <StatusChip
-                    text={selectedAttendance.status}
+                    text={selectedAttendance.isMarked ? selectedAttendance.status : 'NOT MARKED'}
                     level={
                       selectedAttendance.status === 'PRESENT'
                         ? 'SAFE'
                         : selectedAttendance.status === 'ABSENT'
                         ? 'LOW'
-                        : 'WARNING'
+                        : selectedAttendance.status === 'LATE'
+                        ? 'WARNING'
+                        : 'NEUTRAL'
                     }
                   />
                 </View>
@@ -868,10 +988,10 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   bannerImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   bannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   bannerContent: {
@@ -997,18 +1117,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 6,
   },
   hourCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 1,
+    flex: 1,
+    maxWidth: 56,
+    aspectRatio: 1,
+    borderRadius: 28,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   hourText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
 
   // Hour Detail Modal Styles

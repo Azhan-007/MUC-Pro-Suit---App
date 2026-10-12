@@ -1,0 +1,14 @@
+# Exclude everything except mobile
+../../apps/admin-web/
+../../apps/admin-web-old/
+../../apps/backend/
+../../apps/backend.zip
+../../ref images/
+../../ref images-old/
+../../scratch/
+../../.agents/
+../../docs/
+../../node_modules/
+node_modules/
+../../.git/
+.git/

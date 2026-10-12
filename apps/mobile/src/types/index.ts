@@ -4,44 +4,44 @@
 // Auth
 // ─────────────────────────────────────────────
 export interface StudentProfile {
-  id: string;
-  name: string;
-  registerNumber: string;
-  department: string;
-  course: string;
-  semester: string;
-  batch: string;
-  section: string;
-  classAdvisor: string;
-  mentor: string;
-  rollNumber: string;
-  bloodGroup: string;
-  mobile: string;
-  email: string;
-  dob: string;
-  gender: string;
-  permanentAddress: string;
-  fatherName: string;
-  motherName: string;
-  emergencyContact: string;
-  avatarUrl?: string;
+  id?: any;
+  name?: any;
+  registerNumber?: any;
+  department?: any;
+  course?: any;
+  semester?: any;
+  batch?: any;
+  section?: any;
+  classAdvisor?: any;
+  mentor?: any;
+  rollNumber?: any;
+  bloodGroup?: any;
+  mobile?: any;
+  email?: any;
+  dob?: any;
+  gender?: any;
+  permanentAddress?: any;
+  fatherName?: any;
+  motherName?: any;
+  emergencyContact?: any;
+  avatarUrl?: any;
 }
 
 export interface FacultyProfile {
-  id: string;
-  name: string;
-  employeeId: string;
-  designation: string;
-  department: string;
-  subjectsTaught: string[];
-  mobile: string;
-  email: string;
-  dob: string;
-  gender: string;
-  bloodGroup: string;
-  qualification: string;
-  experience: string;
-  address: string;
+  id?: any;
+  name?: any;
+  employeeId?: any;
+  designation?: any;
+  department?: any;
+  subjectsTaught?: any;
+  mobile?: any;
+  email?: any;
+  dob?: any;
+  gender?: any;
+  bloodGroup?: any;
+  qualification?: any;
+  experience?: any;
+  address?: any;
 }
 
 export interface StudentRecord {
@@ -141,12 +141,12 @@ export interface GpaPoint {
 }
 
 export interface ResultOverview {
-  currentSgpa: number;
-  cgpa: number;
-  creditsProgress: string;
-  currentProgressPercentage: number;
-  accuracy: string;
-  academicStanding: string;
+  currentSgpa?: any;
+  cgpa?: any;
+  creditsProgress?: any;
+  currentProgressPercentage?: any;
+  accuracy?: any;
+  academicStanding?: any;
   gpaTrend: GpaPoint[];
 }
 
@@ -165,15 +165,17 @@ export interface SubjectGrade {
 // Fees
 // ─────────────────────────────────────────────
 export interface FeeSummary {
-  outstandingAmount: number;
-  paidAmount: number;
-  progressPercent: number;
-  dueDateText: string;
-  isPending: boolean;
-  scholarshipApplied: string;
-  scholarshipDiscount: string;
-  lastPaymentDate: string;
-  nextDueDate: string;
+  outstandingAmount?: any;
+  paidAmount?: any;
+  progressPercent?: any;
+  dueDateText?: any;
+  isPending?: any;
+  scholarshipApplied?: any;
+  scholarshipDiscount?: any;
+  lastPaymentDate?: any;
+  nextDueDate?: any;
+  totalAmount?: any;
+  fineAmount?: any;
 }
 
 export interface FeeDetail {

@@ -322,7 +322,7 @@ export const FeesScreen: React.FC = () => {
               </View>
 
               <View style={{ height: 16 }} />
-              {feeSummary.outstandingAmount > 0 ? (
+              {(feeSummary.outstandingAmount as any) > 0 ? (
                 <CustomButton text="Pay Outstanding Fees" onPress={startCheckout} fullWidth />
               ) : (
                 <View style={styles.allPaidContainer}>

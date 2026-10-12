@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, CheckCircle, AlertTriangle, FileText, BarChart3, Users } from 'lucide-react-native';
 import { Colors } from '../../theme';
 import { CampusCard, StatusChip, useCampusAlert } from '../../components';
-import { mockDefaultersList } from '../../data/mockFacultyData';
+import { AcademicService, StudentAttendanceStat } from '../../services/academicService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -24,10 +24,29 @@ export const FacultyAttendanceHubScreen: React.FC = () => {
   const { showAlert } = useCampusAlert();
   const [activeTab, setActiveTab] = React.useState<ActiveTab>('OVERVIEW');
   const [searchQuery, setSearchQuery] = React.useState('');
-
-  // Mock Reports State
-  const [selectedClass, setSelectedClass] = React.useState('III B.Sc CS');
+  const [selectedClass, setSelectedClass] = React.useState('III BCA');
   const [reportType, setReportType] = React.useState<'PDF' | 'EXCEL'>('PDF');
+
+  // Real defaulters state
+  const [defaulters, setDefaulters] = React.useState<StudentAttendanceStat[]>([]);
+  const [loadingDefaulters, setLoadingDefaulters] = React.useState(false);
+  const [defaulterSummary, setDefaulterSummary] = React.useState({ total: 0, defaulters: 0, safe: 0 });
+
+  // Load real defaulters when DEFAULTERS tab is opened
+  React.useEffect(() => {
+    if (activeTab !== 'DEFAULTERS') return;
+    let active = true;
+    setLoadingDefaulters(true);
+    AcademicService.getFacultyAttendanceStats()
+      .then(res => {
+        if (!active) return;
+        setDefaulters(res.students.filter(s => s.percentage < 75));
+        setDefaulterSummary(res.summary);
+      })
+      .catch(() => {})
+      .finally(() => { if (active) setLoadingDefaulters(false); });
+    return () => { active = false; };
+  }, [activeTab]);
 
   const handleSendWarning = (studentName: string) => {
     showAlert(
@@ -43,7 +62,7 @@ export const FacultyAttendanceHubScreen: React.FC = () => {
   const handleBulkWarning = () => {
     showAlert(
       'Bulk Warning Alert',
-      `This will send automated attendance warnings to parents of all ${mockDefaultersList.length} defaulters. Proceed?`,
+      `This will send automated attendance warnings to parents of all ${defaulters.length} defaulters. Proceed?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Proceed', onPress: () => showAlert('Success', 'Bulk warnings sent successfully.') },
@@ -205,7 +224,9 @@ export const FacultyAttendanceHubScreen: React.FC = () => {
             <View style={styles.defaultersHeader}>
               <View>
                 <Text style={styles.sectionTitle}>Attendance Shortage (&lt; 75%)</Text>
-                <Text style={styles.defaultersSub}>Action required for {mockDefaultersList.length} students</Text>
+                <Text style={styles.defaultersSub}>
+                  {loadingDefaulters ? 'Loading…' : `Action required for ${defaulters.length} students`}
+                </Text>
               </View>
               <Pressable style={styles.bulkBtn} onPress={handleBulkWarning}>
                 <Text style={styles.bulkBtnText}>Alert All</Text>
@@ -214,16 +235,16 @@ export const FacultyAttendanceHubScreen: React.FC = () => {
 
             <TextInput
               style={styles.searchBar}
-              placeholder="Search student by name or roll no..."
+              placeholder="Search student by name or reg. no..."
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholderTextColor={Colors.AppOnSurfaceVariant + '80'}
             />
 
-            {mockDefaultersList
-              .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.rollNo.includes(searchQuery))
+            {defaulters
+              .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.registrationNumber.includes(searchQuery))
               .map((student) => (
-                <CampusCard key={student.id} style={styles.defaulterCard} elevation="sm">
+                <CampusCard key={student.studentId} style={styles.defaulterCard} elevation="sm">
                   <View style={styles.defaulterRow}>
                     <View style={styles.defaulterLeft}>
                       <View style={[styles.avatarCircle, { backgroundColor: Colors.RedErrorContainer }]}>
@@ -233,11 +254,11 @@ export const FacultyAttendanceHubScreen: React.FC = () => {
                       </View>
                       <View>
                         <Text style={styles.defaulterName}>{student.name}</Text>
-                        <Text style={styles.defaulterMeta}>Roll No: {student.rollNo} · {student.class}</Text>
+                        <Text style={styles.defaulterMeta}>Reg: {student.registrationNumber} · {student.attended}/{student.total} classes</Text>
                       </View>
                     </View>
                     <View style={styles.defaulterRight}>
-                      <Text style={styles.defaulterPercent}>{student.attendancePercent}%</Text>
+                      <Text style={styles.defaulterPercent}>{student.percentage}%</Text>
                       <Pressable style={styles.alertBtn} onPress={() => handleSendWarning(student.name)}>
                         <AlertTriangle size={14} color="#FFF" />
                         <Text style={styles.alertBtnText}>Alert</Text>

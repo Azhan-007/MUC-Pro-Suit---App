@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiClient } from '../lib/apiClient';
 import {
   AttendanceOverview,
   DailyAttendance,
@@ -11,19 +12,6 @@ import {
   PaymentTransaction,
   Announcement,
 } from '../types';
-import {
-  mockAttendanceOverview,
-  mockDailyAttendance,
-  mockSubjectAttendance,
-  mockTimetable,
-  mockResultOverview,
-  mockSubjectGrades,
-  mockFeeSummary,
-  mockFeeDetails,
-  mockPaymentTransactions,
-  mockAnnouncements,
-} from '../data/mockData';
-
 interface CampusState {
   // Navigation state
   selectedDay: string;
@@ -36,6 +24,7 @@ interface CampusState {
   subjectAttendanceList: SubjectAttendance[];
 
   // Timetable
+  allTimetableClasses: TimetableClass[];
   timetableClasses: TimetableClass[];
 
   // Results
@@ -61,34 +50,59 @@ interface CampusState {
   setNotificationCount: (count: number) => void;
   setQuickAccessShortcuts: (shortcuts: string[]) => void;
   setFacultyQuickAccessShortcuts: (shortcuts: string[]) => void;
+  fetchCampusData: () => Promise<void>;
 }
 
+// Compute today's short day label (Mon, Tue, Wed, Thu, Fri, Sat). Defaults to Mon on Sunday.
+const getTodayLabel = () => {
+  const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const day = new Date().getDay();
+  return day === 0 ? 'Mon' : labels[day];
+};
+
+import {
+  mockStudentFeeSummary,
+  mockStudentFeeDetails,
+  mockStudentTransactions,
+  mockStudentResultOverview,
+  mockStudentSubjectGrades,
+  mockStudentAnnouncements,
+} from '../data/mockStudentData';
+
 export const useCampusStore = create<CampusState>((set) => ({
-  // Initial state loaded from mock data
-  selectedDay: 'Wed',
-  selectedSemester: 'Semester 4',
-  notificationCount: 2,
+  // Initial state
+  selectedDay: getTodayLabel(),
+  selectedSemester: 'Semester 1',
+  notificationCount: 3,
   quickAccessShortcuts: ['Attendance', 'Timetable', 'Performance', 'Fees', 'Assignments', 'Library'],
   facultyQuickAccessShortcuts: ['Attendance', 'Timetable', 'Enter Marks', 'Circulars', 'Academic Hub', 'Assessments'],
 
-  attendanceOverview: mockAttendanceOverview,
-  dailyAttendance: mockDailyAttendance,
-  subjectAttendanceList: mockSubjectAttendance,
+  attendanceOverview: { overallPercentage: 0, presentDays: 0, absentDays: 0, totalDays: 0, totalAttendedClasses: 0, missedClasses: 0, classesTo75Percent: 0, currentStreak: 0 },
+  dailyAttendance: [] as any[],
+  subjectAttendanceList: [] as any[],
 
-  timetableClasses: mockTimetable['Wed'] ?? [],
+  allTimetableClasses: [] as any[],
+  timetableClasses: [] as any[],
 
-  resultOverview: mockResultOverview,
-  subjectGrades: mockSubjectGrades,
+  resultOverview: mockStudentResultOverview,
+  subjectGrades: mockStudentSubjectGrades,
 
-  feeSummary: mockFeeSummary,
-  feeDetails: mockFeeDetails,
-  paymentTransactions: mockPaymentTransactions,
+  feeSummary: mockStudentFeeSummary,
+  feeDetails: mockStudentFeeDetails,
+  paymentTransactions: mockStudentTransactions,
 
-  announcements: mockAnnouncements,
+  announcements: mockStudentAnnouncements,
 
   // Actions
   setSelectedDay: (day) =>
-    set({ selectedDay: day, timetableClasses: mockTimetable[day] ?? [] }),
+    set((state) => ({ 
+      selectedDay: day, 
+      timetableClasses: state.allTimetableClasses.filter(c => {
+        const dayStr = (c as any).day?.toUpperCase() || '';
+        const searchStr = day.toUpperCase();
+        return dayStr === searchStr || dayStr.startsWith(searchStr);
+      })
+    })),
 
   setSelectedSemester: (semester) =>
     set({ selectedSemester: semester }),
@@ -134,4 +148,28 @@ export const useCampusStore = create<CampusState>((set) => ({
 
   setFacultyQuickAccessShortcuts: (shortcuts) =>
     set({ facultyQuickAccessShortcuts: shortcuts }),
+
+  fetchCampusData: async () => {
+    try {
+      const ttRes = await apiClient.get('/academic/mobile/timetable');
+      const attRes = await apiClient.get('/attendance/mobile-overview');
+      set((state) => {
+        const allTT = ttRes.data || [];
+        const filteredTT = allTT.filter((c: any) => {
+          const dayStr = c.day?.toUpperCase() || '';
+          const searchStr = state.selectedDay.toUpperCase();
+          return dayStr === searchStr || dayStr.startsWith(searchStr);
+        });
+        return { 
+          allTimetableClasses: allTT,
+          timetableClasses: filteredTT,
+          attendanceOverview: attRes.data?.overview || { totalAttendedClasses: 0, missedClasses: 0, classesTo75Percent: 0, currentStreak: 0, overallPercentage: 0 },
+          dailyAttendance: attRes.data?.daily || [],
+          subjectAttendanceList: attRes.data?.subjects || []
+        };
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
 }));

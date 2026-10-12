@@ -1,3 +1,5 @@
+> Before modifying any academic, attendance, timetable, examination, fee, student, faculty, library, placement, or administrative functionality, read `docs/COLLEGE_DOMAIN_RULES.md` first. The domain rules document is the project's authoritative college-specific source of truth. Never silently change or override those rules.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

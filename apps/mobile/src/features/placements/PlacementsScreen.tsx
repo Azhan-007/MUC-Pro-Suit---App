@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageHeader, CampusCard, StatusChip, SectionHeader } from '../../components';
 import { Colors } from '../../theme';
-import { mockJobPostings } from '../../data/mockData';
 import { JobPosting } from '../../types';
+import { mockStudentJobs } from '../../data/mockStudentData';
 import {
   Briefcase,
   MapPin,
@@ -30,7 +30,7 @@ type PlacementTab = 'DRIVES' | 'APPLIED';
 
 export const PlacementsScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<PlacementTab>('DRIVES');
-  const [jobPostings, setJobPostings] = useState<JobPosting[]>(mockJobPostings);
+  const [jobPostings, setJobPostings] = useState<JobPosting[]>(mockStudentJobs);
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
   
   // Custom loader simulation states

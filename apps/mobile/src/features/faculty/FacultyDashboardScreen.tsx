@@ -37,7 +37,7 @@ import {
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useCampusStore } from '../../store/campusStore';
-import { mockFacultyTimetable, mockFacultyStats, mockFacultyNotifications, mockFacultyCirculars } from '../../data/mockFacultyData';
+import { mockFacultyCirculars } from '../../data/mockFacultyData';
 import { getDayOrder, DAY_ORDER_MAP } from '../../utils/dayOrder';
 import {
   CampusCard,
@@ -159,11 +159,22 @@ export const FacultyDashboardScreen: React.FC = () => {
 
   if (!faculty) return null;
 
-  const initial = faculty.name.split(' ').filter(w => /[A-Za-z]/.test(w[0])).map(w => w[0]).join('').slice(0, 2);
+  const initial = faculty.name.split(' ').filter((w: any) => /[A-Za-z]/.test(w[0])).map((w: any) => w[0]).join('').slice(0, 2);
 
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [currentMinute, setCurrentMinute] = React.useState(new Date().getMinutes());
+  // Real faculty timetable
+  const [allFacultySlots, setAllFacultySlots] = React.useState<any[]>([]);
+
+  // Load faculty timetable on mount
+  React.useEffect(() => {
+    import('../../services/academicService').then(({ AcademicService }) => {
+      AcademicService.getFacultyTimetable()
+        .then(slots => setAllFacultySlots(slots))
+        .catch(() => {});
+    });
+  }, []);
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -175,8 +186,8 @@ export const FacultyDashboardScreen: React.FC = () => {
   useFocusEffect(
     React.useCallback(() => {
       setCurrentDate(new Date());
-      const count = mockFacultyNotifications.filter(n => !n.isRead && !n.isArchived).length;
-      setUnreadCount(count);
+      // Notification count: use campusStore (real)
+      setUnreadCount(0);
     }, [])
   );
 
@@ -187,14 +198,26 @@ export const FacultyDashboardScreen: React.FC = () => {
   const todayDayOrder = getDayOrder(currentDate);
   const mappedDay = DAY_ORDER_MAP[todayDayOrder] || 'Mon';
   
+  // Day key for filtering: MONDAY, TUESDAY, etc.
+  const dayEnumKeys = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const dayShortKeys = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const todayDayEnumKey = dayEnumKeys[todayIdx];
+  const fallbackDayEnum = isWeekendDay ? 'WEDNESDAY' : todayDayEnumKey;
+
   const todayClasses = React.useMemo(() => {
-    // If it's a weekend, fall back to Wednesday (just like student dashboard) so there's active data visible
-    const rawClasses = isWeekendDay ? (mockFacultyTimetable['Wed'] || []) : (mockFacultyTimetable[mappedDay] || []);
-    return rawClasses.map((cls) => ({
-      ...cls,
-      status: getClassStatusRealtime(cls.time),
-    }));
-  }, [isWeekendDay, mappedDay, currentMinute]);
+    return allFacultySlots
+      .filter(slot => slot.day === fallbackDayEnum)
+      .map(slot => ({
+        id: slot.id,
+        subject: slot.subject,
+        section: slot.className,
+        room: slot.room,
+        time: slot.time,
+        day: slot.day,
+        status: getClassStatusRealtime(slot.time),
+        totalStudents: slot.totalStudents || 0,
+      }));
+  }, [allFacultySlots, fallbackDayEnum, currentMinute]);
 
   const ongoingClass = React.useMemo(() => todayClasses.find((cls) => cls.status === 'ONGOING'), [todayClasses]);
   const upcomingClasses = React.useMemo(() => todayClasses.filter((cls) => cls.status === 'UPCOMING'), [todayClasses]);
@@ -614,7 +637,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   bannerImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   bannerContent: {
     position: 'absolute',

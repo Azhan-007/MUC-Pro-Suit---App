@@ -15,6 +15,8 @@ export default function FacultyLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(faculty-tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="assessments" options={{ headerShown: false }} />
+      <Stack.Screen name="classes" options={{ headerShown: false }} />
       <Stack.Screen name="exam-marks" options={{ headerShown: false }} />
       <Stack.Screen name="mark-attendance" options={{ headerShown: false }} />
       <Stack.Screen name="attendance-hub" options={{ headerShown: false }} />

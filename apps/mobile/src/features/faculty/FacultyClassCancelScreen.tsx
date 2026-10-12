@@ -8,7 +8,8 @@ import { useRouter } from "expo-router";
 import { ArrowLeft, ChevronDown, Check, Filter, X } from "lucide-react-native";
 import { Colors } from "../../theme";
 import { useCampusAlert } from "../../components";
-import { mockFacultyTimetable } from "../../data/mockFacultyData";
+import { AcademicService, FacultyTimetableSlot } from "../../services/academicService";
+import { useAuthStore } from "../../store/authStore";
 import { getDayOrder } from "../../utils/dayOrder";
 
 // Types
@@ -35,8 +36,8 @@ export function FacultyClassCancelScreen() {
   const insets = useSafeAreaInsets();
   const { showAlert } = useCampusAlert();
   const statusBarHeight = Platform.OS === "android" ? (StatusBar.currentHeight || 24) : (insets.top || 44);
-
-  const LOGGED_IN_FACULTY = "Dr. P. Rizwan Ahmed";
+  const faculty = useAuthStore(s => s.faculty);
+  const LOGGED_IN_FACULTY = faculty?.name || 'Faculty';
 
   // ── States ──
   const [dateStr, setDateStr] = React.useState("2026-07-06"); // Mon (D2)
@@ -124,10 +125,24 @@ export function FacultyClassCancelScreen() {
   const dayOfWeek = getDayOfWeek(dateStr);
   const activeDayOrder = getDayOrder(new Date(dateStr)) || "D1";
 
-  // Load classes assigned to logged-in faculty on the selected date
+  // Load real sessions for selected date from API
+  const [allSlots, setAllSlots] = React.useState<FacultyTimetableSlot[]>([]);
+  React.useEffect(() => {
+    AcademicService.getFacultyTimetable()
+      .then(slots => setAllSlots(slots))
+      .catch(() => {});
+  }, []);
+
+  // Derive sessions for the selected date's day of week
+  const dayEnumKeys: Record<string, string> = {
+    Mon: 'MONDAY', Tue: 'TUESDAY', Wed: 'WEDNESDAY',
+    Thu: 'THURSDAY', Fri: 'FRIDAY',
+  };
+
   const availableSessions = React.useMemo(() => {
-    return mockFacultyTimetable[dayOfWeek] || [];
-  }, [dayOfWeek]);
+    const enumKey = dayEnumKeys[dayOfWeek] || 'MONDAY';
+    return allSlots.filter(slot => slot.day === enumKey);
+  }, [allSlots, dayOfWeek]);
 
   // Reset selected class index when date changes
   React.useEffect(() => {
@@ -173,7 +188,7 @@ export function FacultyClassCancelScreen() {
       date: dateStr,
       dayOrder: activeDayOrder,
       subject: selectedSession.subject,
-      classCode: selectedSession.section,
+      classCode: selectedSession.section || selectedSession.className || "Class",
       section: "A",
       period: selectedSession.time,
       reason: cancelReason.trim(),
@@ -186,7 +201,7 @@ export function FacultyClassCancelScreen() {
 
     showAlert(
       "Success",
-      `Cancellation requested. Students of ${selectedSession.section} will be notified about the cancelled class.`,
+      `Cancellation requested. Students of ${selectedSession.section || selectedSession.className} will be notified about the cancelled class.`,
       [
         {
           text: "OK",
@@ -336,7 +351,7 @@ export function FacultyClassCancelScreen() {
                   </View>
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Class:</Text>
-                    <Text style={styles.summaryVal}>{selectedSession.section} - A</Text>
+                    <Text style={styles.summaryVal}>{selectedSession.section || selectedSession.className} - A</Text>
                   </View>
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Room:</Text>
@@ -514,7 +529,7 @@ export function FacultyClassCancelScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.pickerItemText, active && styles.pickerItemTextActive]}>{item.subject}</Text>
                         <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
-                          Class: {item.section}  ·  Period: {item.time}  ·  Room: {item.room}
+                          Class: {item.section || item.className}  ·  Period: {item.time}  ·  Room: {item.room}
                         </Text>
                       </View>
                       {active && <Check size={16} color={Colors.BluePrimary} />}

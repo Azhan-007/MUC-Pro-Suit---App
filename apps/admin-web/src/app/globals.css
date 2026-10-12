@@ -2,24 +2,22 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-html {
-  scroll-behavior: smooth;
-}
-
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-jakarta), "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  /* Shadcn Variables */
+  /* Shadcn theme bridge */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
@@ -30,189 +28,84 @@ html {
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* institutional colors */
-  --color-on-secondary-fixed: #0f172a;
-  --color-surface-tint: #1d4ed8;
-  --color-on-error: #ffffff;
-  --color-error-container: #fee2e2;
-  --color-secondary-fixed-dim: #94a3b8;
-  --color-outline-variant: #e2e8f0;
-  --color-surface-bright: #ffffff;
-  --color-tertiary-container: #ffedd5;
-  --color-on-primary-fixed: #0f172a;
-  --color-on-primary: #ffffff;
-  --color-on-error-container: #991b1b;
-  --color-on-primary-fixed-variant: #1e3a8a;
-  --color-on-surface-variant: #475569;
-  --color-surface-container-low: #f8fafc;
-  --color-on-secondary-fixed-variant: #1e293b;
-  --color-secondary: #0284c7;
-  --color-primary-fixed: #dbeafe;
-  --color-on-tertiary: #ffffff;
-  --color-surface-container-lowest: #ffffff;
-  --color-secondary-container: #bae6fd;
-  --color-surface-dim: #f1f5f9;
-  --color-on-background: #0f172a;
-  --color-surface: #ffffff;
-  --color-inverse-primary: #93c5fd;
-  --color-tertiary-fixed: #ffedd5;
-  --color-on-surface: #0f172a;
-  --color-primary-fixed-dim: #93c5fd;
-  --color-surface-container-high: #f1f5f9;
-  --color-on-primary-container: #ffffff;
-  --color-inverse-surface: #0f172a;
-  --color-inverse-on-surface: #f8fafc;
-  --color-on-secondary: #ffffff;
-  --color-error: #ef4444;
-  --color-on-tertiary-fixed-variant: #7c2d12;
-  --color-on-tertiary-fixed: #7c2d12;
-  --color-surface-variant: #f1f5f9;
-  --color-tertiary: #ea580c;
-  --color-surface-container-highest: #e2e8f0;
-  --color-surface-container: #f1f5f9;
-  --color-on-secondary-container: #0c4a6e;
-  --color-primary-container: #2563eb;
-  --color-on-tertiary-container: #7c2d12;
-  --color-outline: #64748b;
-  --color-secondary-fixed: #e2e8f0;
-  --color-background: #f8fafc;
-  --color-primary: #2563eb;
-  --color-tertiary-fixed-dim: #fed7aa;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
+/*
+ * ─── MUC PRO SUITE — DESIGN SYSTEM ───────────────────────────
+ *
+ * Color philosophy:
+ *   - Soft mint/neutral canvas, warm off-white surfaces
+ *   - Institutional MUC Green primary
+ *   - Deep forest-slate text, high accessibility & readability
+ *   - Semantic colors: emerald, amber, rose, sky
+ *
+ * All core colors use OKLCH for perceptual uniformity.
+ * ──────────────────────────────────────────────────────────────
+ */
+
 :root {
-  --background: oklch(0.985 0.005 240);
-  --foreground: oklch(0.145 0.01 240);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.5 0.25 250);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0.01 240);
-  --secondary-foreground: oklch(0.205 0.01 240);
-  --muted: oklch(0.97 0.01 240);
-  --muted-foreground: oklch(0.556 0.01 240);
-  --accent: oklch(0.97 0.01 240);
-  --accent-foreground: oklch(0.205 0.01 240);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0.01 240);
-  --input: oklch(0.922 0.01 240);
-  --ring: oklch(0.708 0.01 240);
+  /* Canvas & Text — Soft low-saturation mint/gray neutral */
+  --background: oklch(0.958 0.009 155);
+  --foreground: oklch(0.18 0.015 165);
+
+  /* Surfaces — Soft warm off-white cards, distinct from canvas */
+  --card: oklch(0.990 0.003 150);
+  --card-foreground: oklch(0.18 0.015 165);
+  --popover: oklch(0.990 0.003 150);
+  --popover-foreground: oklch(0.18 0.015 165);
+
+  /* Primary — MUC Institutional Green */
+  --primary: oklch(0.52 0.16 160);
+  --primary-foreground: oklch(0.99 0 0);
+
+  /* Secondary — refined subtle neutral */
+  --secondary: oklch(0.948 0.008 150);
+  --secondary-foreground: oklch(0.20 0.018 165);
+
+  /* Muted — quieter elements */
+  --muted: oklch(0.942 0.007 150);
+  --muted-foreground: oklch(0.48 0.018 160);
+
+  /* Accent — interactive highlights */
+  --accent: oklch(0.948 0.008 150);
+  --accent-foreground: oklch(0.20 0.018 165);
+
+  /* Destructive */
+  --destructive: oklch(0.55 0.22 27);
+
+  /* Borders & Inputs — subtle and delicate */
+  --border: oklch(0.915 0.007 150);
+  --input: oklch(0.915 0.007 150);
+  --ring: oklch(0.52 0.16 160);
+
+  /* Radius */
   --radius: 0.625rem;
+
+  /* Sidebar geometry */
+  --sidebar-width: 16.5rem;
+
+  /* Chart palette — hex for SVG compatibility */
+  --chart-1: #059669;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #ef4444;
+  --chart-5: #0ea5e9;
+}
+
+/* ─── BASE STYLES ──────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-background);
-  color: var(--color-on-surface);
-}
-
-/* Custom scrollbar and subtle layout transitions */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Solid Overrides for Tailwind dynamic opacity utility classes */
-.bg-primary\/5 {
-  background-color: #eff6ff !important;
-}
-.bg-primary\/10 {
-  background-color: #dbeafe !important;
-}
-.bg-primary\/15, .bg-primary\/20 {
-  background-color: #bfdbfe !important;
-}
-
-.bg-secondary\/15, .bg-secondary\/10 {
-  background-color: #f0f9ff !important;
-}
-.bg-secondary\/35 {
-  background-color: #bae6fd !important;
-}
-
-.bg-emerald-500\/10, .bg-emerald-600\/10, .bg-emerald-500\/5 {
-  background-color: #f0fdf4 !important;
-}
-
-.bg-amber-500\/10, .bg-amber-600\/10 {
-  background-color: #fffbeb !important;
-}
-
-.bg-error-container\/30, .bg-error\/10 {
-  background-color: #fef2f2 !important;
-}
-.bg-error-container\/80 {
-  background-color: #fee2e2 !important;
-}
-
-.bg-surface-container-lowest\/85 {
-  background-color: #ffffff !important;
-}
-
-/* Hover backgrounds */
-.hover\:bg-surface-container-low\/50:hover {
-  background-color: #f8fafc !important;
-}
-.hover\:bg-primary\/35:hover {
-  background-color: #93c5fd !important;
-}
-.hover\:bg-secondary\/35:hover {
-  background-color: #7dd3fc !important;
-}
-.hover\:border-outline-variant\/30:hover {
-  border-color: #cbd5e1 !important;
-}
-.hover\:bg-error-container\/80:hover {
-  background-color: #fca5a5 !important;
-}
-
-/* Borders */
-.border-outline-variant\/30, 
-.border-outline-variant\/40, 
-.border-outline-variant\/50, 
-.border-outline-variant\/60 {
-  border-color: #e2e8f0 !important;
-}
-
-.border-primary\/10, .border-primary\/20 {
-  border-color: #bfdbfe !important;
-}
-
-.border-emerald-500\/20 {
-  border-color: #bbf7d0 !important;
-}
-
-.border-amber-500\/20 {
-  border-color: #fde68a !important;
-}
-.border-error\/10 {
-  border-color: #fca5a5 !important;
-}
-
-/* Divides */
-.divide-outline-variant\/30 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important;
-}
-.divide-outline-variant\/60 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important;
-}
-
-/* Focus rings */
-.focus\:ring-primary\/20:focus {
-  --tw-ring-color: #dbeafe !important;
-  box-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer base {
@@ -222,4 +115,109 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ─── TYPOGRAPHY SCALE ─────────────────────────────────────── */
+
+.text-page-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+}
+
+.text-section-title {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.text-card-title {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.text-body {
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  color: var(--foreground);
+}
+
+.text-caption {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+}
+
+.text-label {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* ─── SCROLLBAR ────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.82 0.005 250);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.70 0.01 250);
+}
+
+/* Invisible sidebar scrollbar — appears on hover */
+.sidebar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+.sidebar-scroll:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+}
+
+/* ─── UTILITY OVERRIDES ────────────────────────────────────── */
+
+/* Tailwind v4 CSS-var opacity workarounds for custom colors */
+.bg-primary-subtle {
+  background-color: oklch(0.95 0.03 160);
+}
+
+.text-primary-emphasis {
+  color: oklch(0.42 0.16 160);
+}
+
+.border-primary-subtle {
+  border-color: oklch(0.88 0.05 160);
 }

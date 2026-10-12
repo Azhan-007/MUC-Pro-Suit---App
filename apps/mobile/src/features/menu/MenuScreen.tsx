@@ -183,6 +183,7 @@ export const MenuScreen: React.FC = () => {
           </View>
         ))}
 
+        <Text style={styles.versionFooter}>Beta Version (v1.0) • Powered by Aziron Tech Private Ltd</Text>
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
@@ -214,4 +215,11 @@ const styles = StyleSheet.create({
   itemSubtitle: { fontSize: 11, color: Colors.AppOnSurfaceVariant, marginTop: 2, fontWeight: '500' },
   divider: { height: 1, backgroundColor: Colors.AppOutline, marginLeft: 66 },
   logoutCard: { backgroundColor: '#FFFFFF', overflow: 'hidden', marginTop: 8 },
+  versionFooter: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: Colors.AppOnSurfaceVariant + '80',
+    marginTop: 12,
+    fontWeight: '500',
+  },
 });

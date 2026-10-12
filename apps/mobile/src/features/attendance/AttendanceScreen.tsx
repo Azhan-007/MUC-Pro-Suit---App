@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Pressable,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -63,135 +64,54 @@ const UnmarkedIcon = () => (
 );
 
 // ── Hourly Matrix Mock Data ──
-const hourlyMatrixData = [
-  { day: '01-Mon', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '02-Tue', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '03-Wed', hours: ['PRESENT', 'PRESENT', 'ABSENT', 'PRESENT', 'PRESENT'] },
-  { day: '04-Thu', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '05-Fri', hours: ['PRESENT', 'LATE', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '08-Mon', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '09-Tue', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '10-Wed', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '11-Thu', hours: ['ABSENT', 'ABSENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '12-Fri', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '15-Mon', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '16-Tue', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '17-Wed', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '18-Thu', hours: ['ABSENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '19-Fri', hours: ['ABSENT', 'ABSENT', 'ABSENT', 'ABSENT', 'ABSENT'] },
-  { day: '22-Mon', hours: ['PRESENT', 'PRESENT', 'ABSENT', 'ABSENT', 'ABSENT'] },
-  { day: '23-Tue', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '24-Wed', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '25-Thu', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '26-Fri', hours: ['PRESENT', 'PRESENT', 'LATE', 'PRESENT', 'PRESENT'] },
-  { day: '29-Mon', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PRESENT'] },
-  { day: '30-Tue', hours: ['PRESENT', 'PRESENT', 'PRESENT', 'PRESENT', 'PENDING'] },
-];
+
 
 // ── Semester Mock Data ──
 const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6'];
 
-const mockDataPerSemester: Record<string, {
-  overview: {
-    totalAttendedClasses: number;
-    missedClasses: number;
-    classesTo75Percent: number;
-    currentStreak: number;
-    overallPercent: number;
-  };
-  subjects: Array<{
-    subjectName: string;
-    facultyName?: string;
-    fraction: string;
-    percentage: number;
-    statusLevel: 'SAFE' | 'WARNING' | 'LOW';
-  }>;
-}> = {
-  'Semester 1': {
-    overview: { totalAttendedClasses: 140, missedClasses: 10, classesTo75Percent: 0, currentStreak: 8, overallPercent: 93 },
-    subjects: [
-      { subjectName: 'Technical English', facultyName: 'Dr. John Doe', fraction: '45/48 Hrs', percentage: 93, statusLevel: 'SAFE' },
-      { subjectName: 'Mathematics I', facultyName: 'Prof. Mary Ann', fraction: '48/52 Hrs', percentage: 92, statusLevel: 'SAFE' },
-      { subjectName: 'Engineering Physics', facultyName: 'Dr. Albert E.', fraction: '47/50 Hrs', percentage: 94, statusLevel: 'SAFE' },
-    ]
-  },
-  'Semester 2': {
-    overview: { totalAttendedClasses: 132, missedClasses: 18, classesTo75Percent: 0, currentStreak: 4, overallPercent: 88 },
-    subjects: [
-      { subjectName: 'Mathematics II', facultyName: 'Prof. Mary Ann', fraction: '42/50 Hrs', percentage: 84, statusLevel: 'SAFE' },
-      { subjectName: 'Applied Chemistry', facultyName: 'Dr. Curie', fraction: '46/50 Hrs', percentage: 92, statusLevel: 'SAFE' },
-      { subjectName: 'Programming in C', facultyName: 'Prof. Dennis Ritchie', fraction: '44/50 Hrs', percentage: 88, statusLevel: 'SAFE' },
-    ]
-  },
-  'Semester 3': {
-    overview: { totalAttendedClasses: 120, missedClasses: 25, classesTo75Percent: 0, currentStreak: 6, overallPercent: 82 },
-    subjects: [
-      { subjectName: 'Data Structures', facultyName: 'Prof. Knuth', fraction: '38/48 Hrs', percentage: 79, statusLevel: 'WARNING' },
-      { subjectName: 'Discrete Mathematics', facultyName: 'Prof. Cantor', fraction: '42/50 Hrs', percentage: 84, statusLevel: 'SAFE' },
-      { subjectName: 'Digital Logic Circuits', facultyName: 'Dr. Claude Shannon', fraction: '40/50 Hrs', percentage: 80, statusLevel: 'SAFE' },
-    ]
-  },
-  'Semester 4': {
-    overview: { totalAttendedClasses: 125, missedClasses: 30, classesTo75Percent: 2, currentStreak: 5, overallPercent: 80 },
-    subjects: [
-      { subjectName: 'Operating Systems', facultyName: 'Prof. Linus T.', fraction: '38/50 Hrs', percentage: 76, statusLevel: 'WARNING' },
-      { subjectName: 'Object Oriented Programming', facultyName: 'Prof. Bjarne S.', fraction: '45/50 Hrs', percentage: 90, statusLevel: 'SAFE' },
-      { subjectName: 'Database Management Systems', facultyName: 'Dr. E.F. Codd', fraction: '42/50 Hrs', percentage: 84, statusLevel: 'SAFE' },
-    ]
-  },
-  'Semester 5': {
-    overview: { totalAttendedClasses: 112, missedClasses: 21, classesTo75Percent: 0, currentStreak: 7, overallPercent: 84 },
-    subjects: [
-      { subjectName: 'Computer Networks', facultyName: 'Prof. Tanenbaum', fraction: '42/50 Hrs', percentage: 84, statusLevel: 'SAFE' },
-      { subjectName: 'Software Engineering', facultyName: 'Prof. Pressman', fraction: '35/50 Hrs', percentage: 70, statusLevel: 'LOW' },
-      { subjectName: 'Web Technology', facultyName: 'Prof. Tim Berners-Lee', fraction: '35/40 Hrs', percentage: 87, statusLevel: 'SAFE' },
-    ]
-  },
-  'Semester 6': {
-    overview: { totalAttendedClasses: 115, missedClasses: 15, classesTo75Percent: 0, currentStreak: 9, overallPercent: 88 },
-    subjects: [
-      { subjectName: 'Artificial Intelligence', facultyName: 'Prof. McCarthy', fraction: '38/44 Hrs', percentage: 86, statusLevel: 'SAFE' },
-      { subjectName: 'Cloud Computing', facultyName: 'Dr. Werner Vogels', fraction: '40/46 Hrs', percentage: 86, statusLevel: 'SAFE' },
-      { subjectName: 'Mobile App Development', facultyName: 'Prof. Andy Rubin', fraction: '37/43 Hrs', percentage: 86, statusLevel: 'SAFE' },
-    ]
-  }
-};
+
 
 export const AttendanceScreen: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<'COURSE' | 'HOURLY' | 'TERMLY'>('HOURLY');
-  
+
+  // Real data from campus store (fetched on dashboard load)
+  const { attendanceOverview, subjectAttendanceList, dailyAttendance, fetchCampusData } = useCampusStore();
+
+  // Load real attendance data when screen is focused
+  useEffect(() => {
+    fetchCampusData();
+  }, []);
+
   // Semester selector filter states
-  const [selectedSemester, setSelectedSemester] = useState('Semester 5');
+  const [selectedSemester, setSelectedSemester] = useState('Semester 1');
   const [showSemDropdown, setShowSemDropdown] = useState(false);
 
   // Hourly attendance details modal states
   const [selectedHourDetails, setSelectedHourDetails] = useState<any | null>(null);
 
-  const handleHourPress = (day: string, hourIndex: number, status: string) => {
-    // Map hourIndex to simulated subject details
-    const subjectMap: Record<number, { subject: string; prof: string; time: string; room: string }> = {
-      1: { subject: 'Operating System', prof: 'Ms Sayeeda', time: '09:00 AM - 10:00 AM', room: 'Room 402' },
-      2: { subject: 'Database Management System', prof: 'Dr P Rizwan Ahmed', time: '10:00 AM - 11:00 AM', room: 'Lab 01' },
-      3: { subject: 'Data Mining and Warehousing', prof: 'Dr A Zakiuddin Ahmed', time: '11:30 AM - 12:30 PM', room: 'Room 201' },
-      4: { subject: 'Data Science', prof: 'Mr Yaseen', time: '01:30 PM - 02:30 PM', room: 'Lab 03' },
-      5: { subject: 'Mobile App Development', prof: 'Prof. Andy Rubin', time: '02:30 PM - 03:30 PM', room: 'Room 304' },
-    };
-
-    const details = subjectMap[hourIndex] || subjectMap[1];
-
+  const handleHourPress = (day: string, hourIndex: number, status: string, subject?: string) => {
+    // Use subject info from daily attendance if available, otherwise generic period info
     setSelectedHourDetails({
       day,
       hourIndex,
       status,
-      subject: details.subject,
-      prof: details.prof,
-      time: details.time,
-      room: details.room,
+      subject: subject || `Period H${hourIndex}`,
+      time: '',
     });
   };
 
-  const currentData = mockDataPerSemester[selectedSemester] || mockDataPerSemester['Semester 5'];
+  const currentData = {
+    overview: {
+      totalAttendedClasses: attendanceOverview?.totalAttendedClasses ?? 0,
+      missedClasses: attendanceOverview?.missedClasses ?? 0,
+      totalDays: (attendanceOverview as any)?.totalDays ?? ((attendanceOverview?.totalAttendedClasses ?? 0) + (attendanceOverview?.missedClasses ?? 0)),
+      classesTo75Percent: attendanceOverview?.classesTo75Percent ?? 0,
+      currentStreak: attendanceOverview?.currentStreak ?? 0,
+      overallPercent: attendanceOverview?.overallPercentage ?? 0,
+    },
+    subjects: subjectAttendanceList ?? []
+  };
 
   const renderFilterButton = () => (
     <Pressable
@@ -321,10 +241,12 @@ export const AttendanceScreen: React.FC = () => {
         {/* ── 2. HOURLY TAB ── */}
         {activeTab === 'HOURLY' && (
           <>
-            {/* June pill button */}
+            {/* Current month pill button */}
             <View style={styles.monthSelectorRow}>
               <Pressable style={styles.monthPill}>
-                <Text style={styles.monthPillText}>June</Text>
+                <Text style={styles.monthPillText}>
+                  {new Date().toLocaleString('default', { month: 'long' })}
+                </Text>
               </Pressable>
             </View>
 
@@ -343,34 +265,41 @@ export const AttendanceScreen: React.FC = () => {
                 nestedScrollEnabled={true} 
                 showsVerticalScrollIndicator={true}
               >
-                {hourlyMatrixData.map((row, rIdx) => (
+                {(dailyAttendance ?? []).map((row: any, rIdx: any) => (
                   <View
-                    key={row.day}
+                    key={row.date}
                     style={[
                       styles.tableBodyRow,
-                      rIdx === hourlyMatrixData.length - 1 && { borderBottomWidth: 0 }
+                      rIdx === 0 && { borderBottomWidth: 0 }
                     ]}
                   >
-                    <Text style={styles.tableRowLabel}>{row.day}</Text>
-                    {row.hours.map((status, hIdx) => (
-                      <Pressable
-                        key={hIdx}
-                        style={styles.statusCell}
-                        onPress={() => handleHourPress(row.day, hIdx + 1, status)}
-                      >
-                        {status === 'PRESENT' ? (
-                          <PresentIcon />
-                        ) : status === 'ABSENT' ? (
-                          <AbsentIcon />
-                        ) : status === 'LATE' ? (
-                          <LateIcon />
-                        ) : status === 'LETOFF' ? (
-                          <LetOffIcon />
-                        ) : (
-                          <UnmarkedIcon />
-                        )}
-                      </Pressable>
-                    ))}
+                    <Text style={styles.tableRowLabel}>
+                      {new Date(row.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                    </Text>
+                    {Array.from({ length: 5 }).map((_, hIdx) => {
+                      const periodEntry = row.periods?.find((p: any) => p.period === `H${hIdx + 1}`);
+                      const status = periodEntry?.status || 'UNMARKED';
+                      const subject = periodEntry?.subject;
+                      return (
+                        <Pressable
+                          key={hIdx}
+                          style={styles.statusCell}
+                          onPress={() => handleHourPress(row.date, hIdx + 1, status, subject)}
+                        >
+                          {status === 'PRESENT' ? (
+                            <PresentIcon />
+                          ) : status === 'ABSENT' ? (
+                            <AbsentIcon />
+                          ) : status === 'LATE' ? (
+                            <LateIcon />
+                          ) : status === 'ON_DUTY' ? (
+                            <LetOffIcon />
+                          ) : (
+                            <UnmarkedIcon />
+                          )}
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 ))}
               </ScrollView>
@@ -425,37 +354,41 @@ export const AttendanceScreen: React.FC = () => {
         {/* ── 3. TERMLY TAB ── */}
         {activeTab === 'TERMLY' && (
           <View style={{ paddingTop: 16 }}>
-            {[
-              { term: 'Semester 1 (Jul - Dec 2025)', pct: 91, classes: '120/132 Classes', status: 'SAFE' },
-              { term: 'Semester 2 (Jan - Jun 2026)', pct: 84, classes: '112/133 Classes', status: 'SAFE' },
-            ].map((t, idx) => (
-              <CampusCard key={idx} style={styles.card} elevation="sm">
+            {currentData.overview.totalDays === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                <Text style={{ color: Colors.AppOnSurfaceVariant, fontSize: 14 }}>No term-level attendance data available yet.</Text>
+              </View>
+            ) : (
+              <CampusCard style={styles.card} elevation="sm">
                 <View style={styles.subjectHeader}>
-                  <Text style={styles.subjectName}>{t.term}</Text>
-                  <StatusChip text={t.status} level={t.status === 'SAFE' ? 'SAFE' : 'LOW'} />
+                  <Text style={styles.subjectName}>Current Semester</Text>
+                  <StatusChip
+                    text={currentData.overview.overallPercent >= 75 ? 'SAFE' : currentData.overview.overallPercent >= 65 ? 'WARNING' : 'LOW'}
+                    level={currentData.overview.overallPercent >= 75 ? 'SAFE' : 'LOW'}
+                  />
                 </View>
                 <View style={styles.subjectStatsRow}>
                   <CircularProgress
-                    percentage={t.pct}
+                    percentage={currentData.overview.overallPercent}
                     size={64}
                     strokeWidth={5.5}
-                    progressColor={Colors.ColorPresent}
+                    progressColor={currentData.overview.overallPercent >= 75 ? Colors.ColorPresent : currentData.overview.overallPercent >= 65 ? Colors.ColorPending : Colors.ColorAbsent}
                     label=""
                   />
                   <View style={styles.subjectDetailsBox}>
                     <View style={styles.subjectDetailItem}>
                       <Text style={styles.subjectDetailLabel}>Attended</Text>
-                      <Text style={styles.subjectDetailValue}>{t.classes.split('/')[0]} Hrs</Text>
+                      <Text style={styles.subjectDetailValue}>{currentData.overview.totalAttendedClasses} Hrs</Text>
                     </View>
                     <View style={styles.subjectDetailDivider} />
                     <View style={styles.subjectDetailItem}>
                       <Text style={styles.subjectDetailLabel}>Total Hours</Text>
-                      <Text style={styles.subjectDetailValue}>{t.classes.split('/')[1].split(' ')[0]} Hrs</Text>
+                      <Text style={styles.subjectDetailValue}>{currentData.overview.totalDays} Hrs</Text>
                     </View>
                   </View>
                 </View>
               </CampusCard>
-            ))}
+            )}
           </View>
         )}
       </ScrollView>

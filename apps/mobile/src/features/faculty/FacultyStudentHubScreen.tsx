@@ -20,7 +20,8 @@ import {
 } from 'lucide-react-native';
 import { Colors } from '../../theme';
 import { CampusCard, useCampusAlert } from '../../components';
-import { mockClassStudents, mockMentees as initialMentees } from '../../data/mockFacultyData';
+import { mockMentees as initialMentees, mockClassStudents } from '../../data/mockFacultyData';
+import { AcademicService, FacultyClass, ClassStudent } from '../../services/academicService';
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -102,8 +103,10 @@ interface MentorStudentProfile extends StudentProfile {
   leaveHistorySummary: string;
 }
 
+// Student profiles are loaded from real API in the component (useEffect → AcademicService.getClassStudents)
+
 // ─────────────────────────────────────────────
-// EXTENDED MOCK DATA
+// EXTENDED MOCK DATA (Retained for MENTOR Tab)
 // ─────────────────────────────────────────────
 const buildStudentProfiles = (): StudentProfile[] => {
   const raw = [
@@ -174,6 +177,7 @@ const buildStudentProfiles = (): StudentProfile[] => {
 };
 
 const STUDENT_PROFILES = buildStudentProfiles();
+
 
 const mentorProfileExtras: Record<string, {
   assignmentCompletion: number;
@@ -429,8 +433,60 @@ export const FacultyStudentHubScreen: React.FC = () => {
     });
   };
 
-  // Local mutable student data (mentor notes update in state)
-  const [studentProfiles, setStudentProfiles] = useState<StudentProfile[]>(STUDENT_PROFILES);
+  // Real student state
+  const [studentProfiles, setStudentProfiles] = useState<StudentProfile[]>([]);
+  const [facultyClasses, setFacultyClasses] = useState<FacultyClass[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Load faculty classes on mount, then load first class's students
+  React.useEffect(() => {
+    AcademicService.getFacultyClasses().then(classes => {
+      setFacultyClasses(classes);
+      const uniqueClasses = [...new Map(classes.map(c => [c.classId, c])).values()];
+      if (uniqueClasses.length > 0) {
+        setSelectedClassId(uniqueClasses[0].classId);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Load students when selectedClassId changes
+  React.useEffect(() => {
+    if (!selectedClassId) return;
+    let active = true;
+    setLoadingStudents(true);
+    AcademicService.getClassStudents(selectedClassId).then(students => {
+      if (!active) return;
+      setStudentProfiles(students.map((s, idx) => ({
+        id: s.studentId,
+        name: s.name,
+        rollNo: s.registrationNumber,
+        registerNumber: s.registrationNumber,
+        department: '',
+        year: '',
+        semester: '',
+        section: '',
+        email: '',
+        mobile: '',
+        parentName: '',
+        parentContact: '',
+        parentEmail: '',
+        attendance: 0,
+        status: 'Present' as DayStatus,
+        gpa: 0,
+        subjectAttendance: [],
+        internalMarks: [],
+        assignmentStatus: 'N/A',
+        labStatus: 'N/A',
+        mentorNote: '',
+      })));
+    }).catch(() => {
+      if (active) setStudentProfiles([]);
+    }).finally(() => {
+      if (active) setLoadingStudents(false);
+    });
+    return () => { active = false; };
+  }, [selectedClassId]);
 
   React.useEffect(() => {
     if (params.tab && ['STUDENTS', 'MENTOR'].includes(params.tab)) {

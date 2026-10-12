@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import Providers from "@/components/Providers";
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
-  title: "MUC Pro Suite - Administrative Console",
-  description: "Mazharul Uloom College Autonomous ERP administrative console. Manage students, faculty, timetables, and academic operations.",
+  title: "MUC Pro Suite — Administrative Console",
+  description:
+    "Mazharul Uloom College Autonomous ERP administrative console. Manage students, faculty, academics, and operations.",
 };
+
+import Providers from "./Providers";
 
 export default function RootLayout({
   children,
@@ -13,8 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="font-sans antialiased bg-background text-on-surface">
+    <html lang="en" className={jakarta.variable}>
+      <body className="font-sans antialiased">
         <Providers>
           {children}
         </Providers>

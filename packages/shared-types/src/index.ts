@@ -1,6 +1,20 @@
 import { z } from 'zod';
 
-export const UserRoleSchema = z.enum(['SUPERADMIN', 'MASTER_ADMIN', 'STUDENT', 'FACULTY']);
+/**
+ * Backend authorization vocabulary. New backend code must use this schema.
+ * The legacy UserRoleSchema remains below to avoid breaking the frozen mock UI.
+ */
+export const BackendRoleCodeSchema = z.enum([
+  'SUPER_ADMIN',
+  'MASTER_ADMIN',
+  'DOMAIN_ADMIN',
+  'FACULTY',
+  'STUDENT',
+]);
+export type BackendRoleCode = z.infer<typeof BackendRoleCodeSchema>;
+
+/** @deprecated Mock-frontend vocabulary only; never use for backend authorization. */
+export const UserRoleSchema = z.enum(['SUPERADMIN', 'ADMIN', 'STUDENT', 'FACULTY']);
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
 export const UserSchema = z.object({

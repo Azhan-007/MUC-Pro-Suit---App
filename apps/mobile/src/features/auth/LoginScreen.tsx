@@ -16,7 +16,6 @@ import { Lock, Badge, Eye, EyeOff } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { LoginSchema, LoginInput } from '../../services/authService';
-import { mockProfile } from '../../data/mockData';
 import { CampusCard, CustomButton, CustomTextField } from '../../components';
 import { Colors } from '../../theme';
 
@@ -50,7 +49,7 @@ export const LoginScreen: React.FC = () => {
 
   const onSubmit = async (data: LoginInput) => {
     clearError();
-    login(data.registerNumber, data.password, mockProfile);
+    await login(data.registerNumber, data.password);
   };
 
 
@@ -73,7 +72,12 @@ export const LoginScreen: React.FC = () => {
               resizeMode="contain"
             />
 
-            <Text style={styles.title}>Welcome Back</Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Welcome Back</Text>
+              <View style={styles.betaBadge}>
+                <Text style={styles.betaBadgeText}>BETA</Text>
+              </View>
+            </View>
             <Text style={styles.subtitle}>
               Sign in to access your academic{'\n'}journey.
             </Text>
@@ -164,7 +168,7 @@ export const LoginScreen: React.FC = () => {
               <Text style={styles.footerDot}> · </Text>
               <Pressable><Text style={styles.footerLink}>Terms of Service</Text></Pressable>
             </View>
-            <Text style={styles.version}>MUC Pro Suit v1.0</Text>
+            <Text style={styles.version}>MUC Pro Suit Beta (v1.0)</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -247,6 +251,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.AppOnSurfaceVariant + '80',
     marginTop: 6,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  betaBadge: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FCD34D',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  betaBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.5,
   },
   devRow: {
     flexDirection: 'row',

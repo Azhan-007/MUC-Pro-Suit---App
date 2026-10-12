@@ -1,0 +1,15 @@
+node_modules/
+apps/admin-web/
+apps/admin-web-old/
+apps/backend/
+apps/backend.zip
+ref images/
+ref images-old/
+scratch/
+.agents/
+docs/
+packages/eslint-config/
+packages/typescript-config/
+.git/
+apps/mobile/android/
+apps/mobile/ios/

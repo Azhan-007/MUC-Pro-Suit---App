@@ -5,37 +5,37 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { CampusCard, StatusChip, PageHeader, useCampusAlert } from '../../components';
+import { CampusCard, StatusChip, PageHeader } from '../../components';
 import { Colors } from '../../theme';
-import { User, MapPin, CheckCircle, Clock, Plus, Pencil, Trash2, X, ChevronDown, Check } from 'lucide-react-native';
-import { ClassStatus, ClassSession } from '../../types';
-import { mockFacultyTimetable } from '../../data/mockFacultyData';
+import { User, MapPin, CheckCircle, Clock } from 'lucide-react-native';
+import { ClassStatus } from '../../types';
+import { AcademicService, FacultyTimetableSlot } from '../../services/academicService';
+import { useFocusEffect } from 'expo-router';
 
-const WEEK_DAYS = [
-  { label: 'Mon', num: '12', key: 'Mon' },
-  { label: 'Tue', num: '13', key: 'Tue' },
-  { label: 'Wed', num: '14', key: 'Wed' },
-  { label: 'Thu', num: '15', key: 'Thu' },
-  { label: 'Fri', num: '16', key: 'Fri' },
-  { label: 'Sat', num: '17', key: 'Sat' },
-];
+// ── Real week days computed from today ──
+const getRealWeekDays = () => {
+  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const today = new Date();
+  const currentDay = today.getDay(); // 0=Sun ... 6=Sat
+  const mondayDiff = currentDay === 0 ? -6 : 1 - currentDay;
+  const currentMonday = new Date(today);
+  currentMonday.setDate(today.getDate() + mondayDiff);
 
-const ModalKeyboardAvoidingView: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  if (Platform.OS === 'ios') {
-    return (
-      <KeyboardAvoidingView behavior="padding" style={{ width: '100%' }}>
-        {children}
-      </KeyboardAvoidingView>
-    );
+  const days = [];
+  for (let i = 0; i < 5; i++) {
+    const dayDate = new Date(currentMonday);
+    dayDate.setDate(currentMonday.getDate() + i);
+    days.push({
+      label: labels[i],
+      num: String(dayDate.getDate()),
+      key: labels[i],
+    });
   }
-  return <>{children}</>;
+  return days;
 };
 
 const STATUS_STRIP_COLOR: Record<ClassStatus, string> = {
@@ -44,133 +44,92 @@ const STATUS_STRIP_COLOR: Record<ClassStatus, string> = {
   UPCOMING: Colors.AppOutline,
 };
 
-const SUBJECT_OPTIONS = ['Database Management System', 'Operating System', 'Web Technology', 'Python Programming'];
+// Map API day string to short key
+const dayKeyMap: Record<string, string> = {
+  MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed',
+  THURSDAY: 'Thu', FRIDAY: 'Fri',
+};
+
+const getClassStatusRealtime = (timeStr: string): ClassStatus => {
+  const normalized = timeStr.replace(/\s+/g, '').replace(/[\n\-–]/g, '-');
+  const parts = normalized.split('-');
+  if (parts.length < 2) return 'UPCOMING';
+
+  const parseToMinutes = (str: string) => {
+    let [h, m] = str.split(':').map(Number);
+    if (h >= 1 && h <= 5) h += 12; // PM heuristic for afternoon
+    return h * 60 + m;
+  };
+  const startMin = parseToMinutes(parts[0]);
+  const endMin = parseToMinutes(parts[1]);
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+  if (nowMin >= endMin) return 'COMPLETED';
+  if (nowMin >= startMin && nowMin < endMin) return 'ONGOING';
+  return 'UPCOMING';
+};
 
 export const FacultyTimetableScreen: React.FC = () => {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { showAlert } = useCampusAlert();
 
-  const todayRaw = new Date().getDay(); // 0=Sun ... 6=Sat
-  const todayKey = WEEK_DAYS[todayRaw === 0 ? 0 : todayRaw - 1]?.key ?? 'Mon';
+  const today = new Date().getDay();
+  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const todayKey = today === 0 || today === 6 ? 'Mon' : labels[today - 1];
   const [selectedDay, setSelectedDay] = React.useState(todayKey);
-  const [isManageMode, setIsManageMode] = React.useState(false);
 
-  // CRUD Schedule State
-  const [timetable, setTimetable] = React.useState<Record<string, ClassSession[]>>(mockFacultyTimetable);
+  const weekDays = React.useMemo(() => getRealWeekDays(), []);
 
-  const rightHeaderBtn = (
-    <Pressable onPress={() => setIsManageMode(!isManageMode)}>
-      <Text style={{
-        fontSize: 14,
-        fontWeight: '800',
-        color: isManageMode ? Colors.ColorPresent : Colors.BluePrimary,
-      }}>
-        {isManageMode ? 'Done' : 'Manage'}
-      </Text>
-    </Pressable>
+  // Real data state
+  const [allSlots, setAllSlots] = React.useState<FacultyTimetableSlot[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let active = true;
+      const load = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          const data = await AcademicService.getFacultyTimetable();
+          if (active) setAllSlots(data);
+        } catch (e: any) {
+          if (active) setError('Failed to load timetable. Check connection.');
+        } finally {
+          if (active) setLoading(false);
+        }
+      };
+      load();
+      return () => { active = false; };
+    }, [])
   );
 
-  // Form State
-  const [showFormModal, setShowFormModal] = React.useState(false);
-  const [editingSession, setEditingSession] = React.useState<ClassSession | null>(null);
-  const [formSubject, setFormSubject] = React.useState('');
-  const [formSection, setFormSection] = React.useState('');
-  const [formRoom, setFormRoom] = React.useState('');
-  const [formTime, setFormTime] = React.useState('');
-  const [showSubjectPicker, setShowSubjectPicker] = React.useState(false);
-
-  const sessions = timetable[selectedDay] || [];
-  const periodCount = sessions.length;
-
-  const handleAddPress = () => {
-    setEditingSession(null);
-    setFormSubject('Database Management System');
-    setFormSection('III B.Sc CS');
-    setFormRoom('Room 402');
-    setFormTime('09:00 - 10:00');
-    setShowFormModal(true);
-  };
-
-  const handleEditPress = (session: ClassSession) => {
-    setEditingSession(session);
-    setFormSubject(session.subject);
-    setFormSection(session.section);
-    setFormRoom(session.room);
-    setFormTime(session.time);
-    setShowFormModal(true);
-  };
-
-  const handleSave = () => {
-    if (!formSubject || !formSection || !formRoom || !formTime) {
-      showAlert('Error', 'Please fill in all fields.');
-      return;
-    }
-
-    if (editingSession) {
-      // Edit
-      setTimetable((prev) => {
-        const list = prev[selectedDay] || [];
-        const updated = list.map((item) =>
-          item.id === editingSession.id
-            ? { ...item, subject: formSubject, section: formSection, room: formRoom, time: formTime }
-            : item
-        );
-        return { ...prev, [selectedDay]: updated };
-      });
-    } else {
-      // Add
-      const newSession: ClassSession = {
-        id: 'session_' + Date.now(),
-        subject: formSubject,
-        section: formSection,
-        room: formRoom,
-        time: formTime,
-        day: selectedDay,
-        status: 'UPCOMING',
-        totalStudents: formSection.includes('III') ? 52 : 48,
-      };
-      setTimetable((prev) => {
-        const list = prev[selectedDay] || [];
-        return { ...prev, [selectedDay]: [...list, newSession] };
-      });
-    }
-    setShowFormModal(false);
-  };
-
-  const handleDeletePress = (sessionId: string) => {
-    showAlert(
-      'Delete Class',
-      'Are you sure you want to remove this class from your schedule?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            setTimetable((prev) => {
-              const list = prev[selectedDay] || [];
-              const filtered = list.filter((item) => item.id !== sessionId);
-              return { ...prev, [selectedDay]: filtered };
-            });
-          },
-        },
-      ]
-    );
-  };
+  // Filter by selected day and enrich with real-time status
+  const sessions = React.useMemo(() => {
+    return allSlots
+      .filter(slot => {
+        const slotDay = dayKeyMap[slot.day] || slot.day;
+        return slotDay === selectedDay;
+      })
+      .map(slot => ({
+        ...slot,
+        status: getClassStatusRealtime(slot.time) as ClassStatus,
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
+  }, [allSlots, selectedDay]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <PageHeader title="My Schedule" rightElement={rightHeaderBtn} />
+      <PageHeader title="My Schedule" />
 
-      {/* ── 1. Day Selector (Pinned & Scrollable) ── */}
+      {/* ── Day Selector ── */}
       <View style={styles.pinnedDaySelectorContainer}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.daySelectorContent}
         >
-          {WEEK_DAYS.map(({ label, num, key }) => {
+          {weekDays.map(({ label, num, key }) => {
             const active = selectedDay === key;
             return (
               <Pressable
@@ -194,33 +153,40 @@ export const FacultyTimetableScreen: React.FC = () => {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── 2. Classes Header ── */}
+        {/* ── Header ── */}
         <View style={styles.classesHeader}>
           <View>
             <Text style={styles.classesTitle}>Scheduled Classes</Text>
-            <Text style={styles.classesSubText}>{periodCount} periods for {selectedDay}</Text>
+            <Text style={styles.classesSubText}>{sessions.length} periods for {selectedDay}</Text>
           </View>
-          {isManageMode ? (
-            <Pressable style={styles.addSessionBtn} onPress={handleAddPress}>
-              <Plus size={15} color="#FFFFFF" />
-              <Text style={styles.addSessionBtnText}>Add Class</Text>
-            </Pressable>
-          ) : (
-            <StatusChip text={`${periodCount} Classes`} level="ACADEMIC" />
-          )}
+          <StatusChip text={`${sessions.length} Classes`} level="ACADEMIC" />
         </View>
 
-        {/* ── 3. Class Timeline ── */}
-        {sessions.length === 0 ? (
+        {/* ── Content ── */}
+        {loading ? (
+          <View style={styles.centerBox}>
+            <ActivityIndicator size="large" color={Colors.BluePrimary} />
+            <Text style={styles.loadingText}>Loading your schedule…</Text>
+          </View>
+        ) : error ? (
           <CampusCard borderColor={Colors.AppOutline} style={styles.classCard} elevation="sm">
             <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.AppOnSurfaceVariant }}>
-                No classes scheduled for this day!
+              <Text style={styles.emptyText}>{error}</Text>
+            </View>
+          </CampusCard>
+        ) : sessions.length === 0 ? (
+          <CampusCard borderColor={Colors.AppOutline} style={styles.classCard} elevation="sm">
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Text style={styles.emptyText}>No classes scheduled for {selectedDay}</Text>
+              <Text style={styles.emptySubText}>
+                {allSlots.length === 0
+                  ? 'No timetable has been assigned yet. Contact the admin.'
+                  : 'You have a free day!'}
               </Text>
             </View>
           </CampusCard>
         ) : (
-          sessions.map((cls, idx) => {
+          sessions.map((cls) => {
             const status = cls.status ?? 'UPCOMING';
             const isOngoing = status === 'ONGOING';
 
@@ -233,42 +199,30 @@ export const FacultyTimetableScreen: React.FC = () => {
                 style={styles.classCard}
               >
                 <View style={styles.classInner}>
-                  {/* Status strip */}
                   <View style={[styles.statusStrip, { backgroundColor: STATUS_STRIP_COLOR[status] }]} />
 
                   <View style={styles.classContent}>
                     <View style={styles.timeBlock}>
-                      <Text style={styles.timeText}>{cls.time.replace(' ', '\n')}</Text>
+                      <Text style={styles.timeText}>{cls.time.replace(' - ', '\n')}</Text>
                     </View>
                     <View style={styles.vertLine} />
                     <View style={styles.classInfo}>
                       <Text style={styles.subjectText}>{cls.subject}</Text>
                       <View style={styles.classMeta}>
                         <User size={13} color={Colors.AppOnSurfaceVariant} />
-                        <Text style={styles.classMetaText}> {cls.section}</Text>
+                        <Text style={styles.classMetaText}> {cls.className}</Text>
                         <MapPin size={13} color={Colors.AppOnSurfaceVariant} style={{ marginLeft: 12 }} />
                         <Text style={styles.classMetaText}> {cls.room}</Text>
                       </View>
+                      {cls.periodCode ? (
+                        <Text style={styles.periodBadge}>{cls.periodCode}</Text>
+                      ) : null}
                     </View>
 
-                    {/* Actions and Status Block */}
-                    <View style={[styles.actionsBlock, { justifyContent: isManageMode ? 'space-between' : 'center' }]}>
-                      <View style={styles.statusIcon}>
-                        {status === 'COMPLETED' && <CheckCircle size={22} color={Colors.ColorPresent} />}
-                        {status === 'ONGOING' && <StatusChip text="NOW" level="NOW" />}
-                        {status === 'UPCOMING' && <Clock size={20} color={Colors.AppOnSurfaceVariant} />}
-                      </View>
-                      
-                      {isManageMode && (
-                        <View style={styles.cardBtnGroup}>
-                          <Pressable style={styles.cardActionBtn} onPress={() => handleEditPress(cls)}>
-                            <Pencil size={13} color={Colors.BluePrimary} />
-                          </Pressable>
-                          <Pressable style={styles.cardActionBtn} onPress={() => handleDeletePress(cls.id)}>
-                            <Trash2 size={13} color={Colors.ColorAbsent} />
-                          </Pressable>
-                        </View>
-                      )}
+                    <View style={styles.actionsBlock}>
+                      {status === 'COMPLETED' && <CheckCircle size={22} color={Colors.ColorPresent} />}
+                      {status === 'ONGOING' && <StatusChip text="NOW" level="NOW" />}
+                      {status === 'UPCOMING' && <Clock size={20} color={Colors.AppOnSurfaceVariant} />}
                     </View>
                   </View>
                 </View>
@@ -279,117 +233,6 @@ export const FacultyTimetableScreen: React.FC = () => {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* Add / Edit Form Modal Sheet */}
-      <Modal visible={showFormModal} transparent animationType="slide">
-        <View style={styles.pickerOverlay}>
-          <Pressable style={styles.pickerDismiss} onPress={() => setShowFormModal(false)} />
-          <ModalKeyboardAvoidingView>
-            <View style={[styles.pickerSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>
-                  {editingSession ? 'Edit Scheduled Class' : 'Add Scheduled Class'}
-                </Text>
-                <Pressable onPress={() => setShowFormModal(false)} style={styles.pickerCloseBtn}>
-                  <X size={20} color={Colors.AppOnBackground} />
-                </Pressable>
-              </View>
-
-              <ScrollView 
-                style={{ flexShrink: 1 }}
-                contentContainerStyle={styles.configContent}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Subject Selector */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Subject</Text>
-                  <Pressable style={styles.fullDropdownTrigger} onPress={() => setShowSubjectPicker(true)}>
-                    <Text style={styles.dropdownValue} numberOfLines={1}>{formSubject}</Text>
-                    <ChevronDown size={18} color={Colors.AppOnSurfaceVariant} />
-                  </Pressable>
-                </View>
-
-                {/* Class / Section Input */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Class / Section</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={formSection}
-                    onChangeText={setFormSection}
-                    placeholder="e.g. III B.Sc CS"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
-
-                {/* Room Input */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Room / Lab Location</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={formRoom}
-                    onChangeText={setFormRoom}
-                    placeholder="e.g. Room 402 or Lab 01"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
-
-                {/* Time Input */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Timings</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={formTime}
-                    onChangeText={setFormTime}
-                    placeholder="e.g. 09:00 - 10:00"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
-
-                {/* Save button */}
-                <Pressable style={styles.saveBtn} onPress={handleSave}>
-                  <Text style={styles.saveBtnText}>Save Schedule</Text>
-                </Pressable>
-              </ScrollView>
-            </View>
-          </ModalKeyboardAvoidingView>
-        </View>
-      </Modal>
-
-      {/* Subject Selector sub-modal */}
-      <Modal visible={showSubjectPicker} transparent animationType="slide">
-        <View style={styles.pickerOverlay}>
-          <Pressable style={styles.pickerDismiss} onPress={() => setShowSubjectPicker(false)} />
-          <View style={[styles.pickerSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Select Subject</Text>
-              <Pressable onPress={() => setShowSubjectPicker(false)} style={styles.pickerCloseBtn}>
-                <X size={20} color={Colors.AppOnBackground} />
-              </Pressable>
-            </View>
-            <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
-              {SUBJECT_OPTIONS.map((sub) => {
-                const active = formSubject === sub;
-                return (
-                  <Pressable
-                    key={sub}
-                    style={[styles.pickerItem, active && styles.pickerItemActive]}
-                    onPress={() => {
-                      setFormSubject(sub);
-                      setShowSubjectPicker(false);
-                    }}
-                  >
-                    <Text style={[styles.pickerItemText, active && styles.pickerItemTextActive]} numberOfLines={1}>
-                      {sub}
-                    </Text>
-                    {active && <Check size={16} color={Colors.BluePrimary} />}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -404,31 +247,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.AppOutline,
   },
-  daySelectorContent: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
+  daySelectorContent: { paddingHorizontal: 16, gap: 12 },
   dayItem: {
     alignItems: 'center',
     justifyContent: 'center',
     width: 58,
     height: 70,
     borderRadius: 16,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
-    borderWidth: 1,
   },
-  dayItemActive: {
-    backgroundColor: Colors.BluePrimary,
-    borderColor: Colors.BluePrimary,
-  },
-  dayItemInactive: {
-    backgroundColor: Colors.AppSurface,
-    borderColor: Colors.AppOutline,
-  },
+  dayItemActive: { backgroundColor: Colors.BluePrimary, borderColor: Colors.BluePrimary },
+  dayItemInactive: { backgroundColor: Colors.AppSurface, borderColor: Colors.AppOutline },
   dayLabel: { fontSize: 12, fontWeight: '700', color: Colors.AppOnSurfaceVariant },
   dayNum: { fontSize: 16, fontWeight: '900', color: Colors.AppOnBackground, marginTop: 4 },
   classesHeader: {
@@ -440,21 +274,6 @@ const styles = StyleSheet.create({
   },
   classesTitle: { fontSize: 18, fontWeight: '700', color: Colors.AppOnBackground },
   classesSubText: { fontSize: 11, color: Colors.AppOnSurfaceVariant, marginTop: 1 },
-  addSessionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.BluePrimary,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    shadowColor: Colors.BluePrimary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  addSessionBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   classCard: { marginBottom: 10, overflow: 'hidden' },
   classInner: { flexDirection: 'row' },
   statusStrip: { width: 6 },
@@ -466,141 +285,20 @@ const styles = StyleSheet.create({
   subjectText: { fontSize: 15, fontWeight: '700', color: Colors.AppOnBackground, lineHeight: 18 },
   classMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   classMetaText: { fontSize: 12, color: Colors.AppOnSurfaceVariant },
-  actionsBlock: {
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    minHeight: 64,
-  },
-  statusIcon: { alignItems: 'center', justifyContent: 'center' },
-  cardBtnGroup: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 6,
-  },
-  cardActionBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-    zIndex: 9999,
-    elevation: 10,
-  },
-  pickerDismiss: {
-    flex: 1,
-  },
-  pickerSheet: {
-    backgroundColor: Colors.AppSurface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 20,
-    maxHeight: '85%',
-    overflow: 'hidden',
-  },
-  pickerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.AppOutline,
-  },
-  pickerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.AppOnBackground,
-  },
-  pickerCloseBtn: {
-    padding: 4,
-  },
-  configContent: {
-    padding: 20,
-    gap: 16,
-  },
-  formGroup: {
-    gap: 6,
-    width: '100%',
-  },
-  formLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.AppOnSurfaceVariant,
-  },
-  fullDropdownTrigger: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  dropdownValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.AppOnBackground,
-  },
-  textInput: {
-    width: '100%',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.AppOnBackground,
-  },
-  saveBtn: {
-    backgroundColor: Colors.BluePrimary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  saveBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  pickerList: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  pickerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 4,
-  },
-  pickerItemActive: {
-    backgroundColor: Colors.BluePrimary + '0D',
-  },
-  pickerItemText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.AppOnSurfaceVariant,
-  },
-  pickerItemTextActive: {
+  periodBadge: {
+    marginTop: 4,
+    fontSize: 11,
     fontWeight: '700',
     color: Colors.BluePrimary,
+    backgroundColor: Colors.BluePrimaryContainer + '33',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
+  actionsBlock: { alignItems: 'center', justifyContent: 'center' },
+  centerBox: { alignItems: 'center', paddingVertical: 48 },
+  loadingText: { marginTop: 12, fontSize: 14, color: Colors.AppOnSurfaceVariant },
+  emptyText: { fontSize: 15, fontWeight: '600', color: Colors.AppOnSurfaceVariant, textAlign: 'center' },
+  emptySubText: { fontSize: 13, color: Colors.AppOnSurfaceVariant, marginTop: 4, textAlign: 'center', paddingHorizontal: 16 },
 });

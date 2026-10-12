@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageHeader, CampusCard, StatusChip, SectionHeader } from '../../components';
 import { Colors } from '../../theme';
-import { mockCollegeEvents } from '../../data/mockData';
 import { CollegeEvent } from '../../types';
+import { mockStudentEvents } from '../../data/mockStudentData';
 import {
   Calendar,
   Clock,
@@ -33,7 +33,7 @@ const CATEGORIES: Array<{ label: string; value: CollegeEvent['category'] | 'ALL'
 
 export const EventsScreen: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<CollegeEvent['category'] | 'ALL'>('ALL');
-  const [events, setEvents] = useState<CollegeEvent[]>(mockCollegeEvents);
+  const [events, setEvents] = useState<CollegeEvent[]>(mockStudentEvents);
   const [selectedEvent, setSelectedEvent] = useState<CollegeEvent | null>(null);
   
   // Ticket booking process loader

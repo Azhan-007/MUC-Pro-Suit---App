@@ -9,12 +9,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { PageHeader, CampusCard, StatusChip } from '../../components';
 import { Colors } from '../../theme';
-import { mockAssignments } from '../../data/mockData';
 import { Calendar, User, Award, FileText, CheckCircle, AlertCircle } from 'lucide-react-native';
 
 export const AssignmentDetailsScreen: React.FC = () => {
   const { id } = useLocalSearchParams();
-  const assignment = mockAssignments.find((a) => a.id === id);
+  const assignment: any = null;
 
   if (!assignment) {
     return (

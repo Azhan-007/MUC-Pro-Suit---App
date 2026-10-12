@@ -10,8 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { PageHeader, CampusCard, StatusChip } from '../../components';
 import { Colors } from '../../theme';
-import { mockAssignments } from '../../data/mockData';
 import { Assignment } from '../../types';
+import { mockStudentAssignments } from '../../data/mockStudentData';
 import { ClipboardList, Calendar, CheckCircle, AlertCircle, Award } from 'lucide-react-native';
 
 const FILTERS: Array<{ label: string; value: Assignment['status'] | 'ALL' }> = [
@@ -23,7 +23,7 @@ const FILTERS: Array<{ label: string; value: Assignment['status'] | 'ALL' }> = [
 
 export const AssignmentsScreen: React.FC = () => {
   const router = useRouter();
-  const [assignments, setAssignments] = useState<Assignment[]>(mockAssignments);
+  const [assignments, setAssignments] = useState<Assignment[]>(mockStudentAssignments);
   const [activeFilter, setActiveFilter] = useState<Assignment['status'] | 'ALL'>('ALL');
 
   const filtered = activeFilter === 'ALL'
