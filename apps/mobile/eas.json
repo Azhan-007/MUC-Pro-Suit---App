@@ -18,13 +18,17 @@
       },
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
-        "EXPO_PUBLIC_API_URL": "https://lynn-prince-pam-framework.trycloudflare.com/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://muc-backend.onrender.com/api/v1"
       }
     },
     "production": {
       "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EXPO_PUBLIC_API_URL": "https://muc-backend.onrender.com/api/v1"
       }
     }
   },
