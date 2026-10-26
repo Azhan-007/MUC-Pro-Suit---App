@@ -13,8 +13,8 @@ function getApiUrl(): string {
     const ip = hostUri.split(':')[0];
     return `http://${ip}:3001/api/v1`;
   }
-  // 3. Fallback for production builds — should be overridden via env
-  return 'http://localhost:3001/api/v1';
+  // 3. Fallback for production builds — points to live cloud backend
+  return 'https://muc-backend.onrender.com/api/v1';
 }
 
 const API_URL = getApiUrl();
@@ -27,7 +27,7 @@ if (__DEV__) {
 export const apiClient = axios.create({
   baseURL: API_URL,
   withCredentials: true,
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // Attach JWT token on every request

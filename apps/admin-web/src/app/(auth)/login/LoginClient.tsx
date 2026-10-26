@@ -86,9 +86,19 @@ export default function LoginClient() {
         setError("You do not have administrative access.");
       }
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || err.response?.data?.error || "Invalid username or password."
-      );
+      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        setError(
+          "Server is waking up (free-tier cold start). Please wait a moment and try again."
+        );
+      } else if (!err.response) {
+        setError(
+          "Unable to connect to the authentication server. Please check your internet connection."
+        );
+      } else {
+        setError(
+          err.response?.data?.message || err.response?.data?.error || "Invalid username or password."
+        );
+      }
     } finally {
       setIsLoading(false);
     }

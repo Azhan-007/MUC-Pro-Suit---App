@@ -6,6 +6,26 @@ import { UnauthorizedError, BadRequestError } from '../../utils/errors';
 import { AuditService } from '../../services/audit.service';
 import { AuditOutcome, AuthClientType, SessionRevocationReason } from '@prisma/client';
 import crypto from 'crypto';
+import type { CookieSerializeOptions } from '@fastify/cookie';
+
+/**
+ * Compute cookie options based on the request origin.
+ * When the frontend is on a different origin (e.g. localhost calling Render),
+ * we must use SameSite=None so the browser stores the cross-origin cookie.
+ * SameSite=None normally requires Secure, but localhost is exempt in most browsers.
+ */
+function getCookieOptions(request: FastifyRequest, pathOverride?: string): CookieSerializeOptions {
+  const origin = request.headers.origin || '';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isCrossOrigin = isProduction && origin && !origin.includes('.onrender.com');
+
+  return {
+    path: pathOverride || '/',
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isCrossOrigin ? 'none' as const : 'lax' as const,
+  };
+}
 
 const loginSchema = z.object({
   identifier: z.string(),
@@ -124,18 +144,8 @@ export class AuthController {
     });
 
     if (clientType === AuthClientType.WEB) {
-      reply.setCookie('accessToken', accessToken, {
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
-      reply.setCookie('refreshToken', opaqueToken, {
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
+      reply.setCookie('accessToken', accessToken, getCookieOptions(request));
+      reply.setCookie('refreshToken', opaqueToken, getCookieOptions(request));
       return reply.send({ success: true, message: 'Logged in successfully' });
     }
 
@@ -244,18 +254,8 @@ export class AuthController {
     });
 
     if (clientType === AuthClientType.WEB) {
-      reply.setCookie('accessToken', accessToken, {
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
-      reply.setCookie('refreshToken', newOpaqueToken, {
-        path: '/api/v1/auth/refresh',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
+      reply.setCookie('accessToken', accessToken, getCookieOptions(request));
+      reply.setCookie('refreshToken', newOpaqueToken, getCookieOptions(request, '/api/v1/auth/refresh'));
       return reply.send({ success: true, message: 'Token refreshed' });
     }
 
@@ -296,8 +296,8 @@ export class AuthController {
       }
     }
 
-    reply.clearCookie('accessToken', { path: '/' });
-    reply.clearCookie('refreshToken', { path: '/api/v1/auth/refresh' });
+    reply.clearCookie('accessToken', getCookieOptions(request));
+    reply.clearCookie('refreshToken', getCookieOptions(request, '/api/v1/auth/refresh'));
     return reply.send({ success: true, message: 'Logged out successfully' });
   }
 

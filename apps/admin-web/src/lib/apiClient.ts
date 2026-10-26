@@ -10,6 +10,7 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Crucial for Fastify secure cookie/session integration
+  timeout: 60000, // 60s timeout to handle Render free-tier cold starts
 });
 
 // Request interceptor to add correlation IDs if needed
@@ -64,3 +65,4 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
