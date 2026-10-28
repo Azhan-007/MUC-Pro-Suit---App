@@ -44,17 +44,24 @@ export default function LoginClient() {
 
     try {
       // 1. Post to login
-      await import("@/lib/apiClient").then((mod) =>
-        mod.apiClient.post("/auth/login", {
-          identifier: userEmail,
-          password: pass,
-          clientType: "WEB",
-        })
-      );
+      const { apiClient } = await import("@/lib/apiClient");
+      const loginRes = await apiClient.post("/auth/login", {
+        identifier: userEmail,
+        password: pass,
+        clientType: "MOBILE",
+      });
+
+      if (loginRes.data?.accessToken) {
+        document.cookie = `accessToken=${loginRes.data.accessToken}; path=/; max-age=604800; SameSite=Lax;`;
+        apiClient.defaults.headers.common["Authorization"] = `Bearer ${loginRes.data.accessToken}`;
+      }
 
       // 2. Fetch /me
-      const { apiClient } = await import("@/lib/apiClient");
-      const meRes = await apiClient.get("/auth/me");
+      const meRes = await apiClient.get("/auth/me", {
+        headers: loginRes.data?.accessToken
+          ? { Authorization: `Bearer ${loginRes.data.accessToken}` }
+          : undefined,
+      });
       const user = meRes.data.user;
 
       // 3. Find primary role

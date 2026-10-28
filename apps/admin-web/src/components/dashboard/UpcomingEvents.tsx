@@ -23,9 +23,9 @@ export function UpcomingEvents({ items }: UpcomingEventsProps = {}) {
   const displayItems = items && items.length > 0 ? items : null;
 
   return (
-    <div className="bg-card rounded-2xl border border-border h-full flex flex-col shadow-xs overflow-hidden">
+    <div className="bg-card rounded-xl border border-border/80 h-full flex flex-col shadow-xs overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/80 bg-muted/20">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/70 bg-muted/20">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           <h3 className="text-sm font-bold text-foreground">
@@ -34,7 +34,7 @@ export function UpcomingEvents({ items }: UpcomingEventsProps = {}) {
         </div>
         <Link
           href="/master-admin/events"
-          className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer"
+          className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 cursor-pointer focus-ring rounded"
         >
           View Calendar <ArrowRight className="h-3 w-3" />
         </Link>
@@ -54,14 +54,14 @@ export function UpcomingEvents({ items }: UpcomingEventsProps = {}) {
               <Link
                 key={item.id}
                 href={item.targetRoute}
-                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/50 border border-transparent hover:border-border/60 transition-all group cursor-pointer"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/40 border border-transparent hover:border-border/60 transition-all group cursor-pointer focus-ring"
               >
                 {/* Calendar Date Block */}
-                <div className="flex flex-col items-center justify-center shrink-0 w-10 h-10 rounded-xl bg-primary/5 border border-primary/15 group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors">
+                <div className="flex flex-col items-center justify-center shrink-0 w-9.5 h-9.5 rounded-lg bg-primary/5 border border-primary/15 group-hover:border-primary/25 group-hover:bg-primary/10 transition-colors">
                   <span className="text-[8.5px] font-bold uppercase tracking-wider text-primary leading-none mb-0.5">
                     {month}
                   </span>
-                  <span className="text-sm font-extrabold text-foreground leading-none">
+                  <span className="text-sm font-extrabold text-foreground leading-none num-tabular">
                     {dayNum}
                   </span>
                 </div>
@@ -72,7 +72,7 @@ export function UpcomingEvents({ items }: UpcomingEventsProps = {}) {
                     {cleanTitle}
                   </p>
 
-                  <div className="flex items-center gap-1.5 mt-1">
+                  <div className="flex items-center gap-1.5 mt-0.5">
                     <span
                       className={cn(
                         "rounded px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wider border",
@@ -91,7 +91,7 @@ export function UpcomingEvents({ items }: UpcomingEventsProps = {}) {
                 </div>
 
                 {/* Due Status & Arrow */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span
                     className={cn(
                       "text-[10px] font-semibold px-2 py-0.5 rounded-md border",
@@ -124,7 +124,7 @@ export function UpcomingEvents({ items }: UpcomingEventsProps = {}) {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-border bg-muted/20 mt-auto flex items-center justify-between text-xs shrink-0">
+      <div className="px-4 py-2 border-t border-border/70 bg-muted/20 mt-auto flex items-center justify-between text-xs shrink-0">
         <span className="text-[11px] text-muted-foreground">
           Chronologically sorted across academic modules
         </span>

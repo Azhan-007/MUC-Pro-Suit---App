@@ -44,22 +44,22 @@ export function RecentActivityCard({ activity }: RecentActivityCardProps = {}) {
   const items = activity || [];
 
   return (
-    <div className="bg-card rounded-2xl border border-border h-full flex flex-col shadow-xs">
+    <div className="bg-card rounded-xl border border-border/80 h-full flex flex-col shadow-xs overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+      <div className="flex items-center justify-between px-4.5 py-3.5 border-b border-border/70 bg-muted/20">
         <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-emerald-600" />
-          <h3 className="text-[15px] font-semibold text-foreground">
+          <Activity className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <h3 className="text-sm font-bold text-foreground">
             Recent Institutional Activity
           </h3>
         </div>
-        <span className="text-xs font-semibold text-muted-foreground bg-muted rounded-full px-2.5 py-0.5">
+        <span className="text-xs font-semibold text-muted-foreground bg-muted/70 rounded-full px-2.5 py-0.5 border border-border/60">
           {items.length} records
         </span>
       </div>
 
       {/* Activity Timeline List */}
-      <div className="flex-1 divide-y divide-border overflow-y-auto max-h-[380px]">
+      <div className="flex-1 divide-y divide-border/60 overflow-y-auto max-h-[380px]">
         {items.length > 0 ? (
           items.map((item) => {
             const Icon = moduleIconMap[item.module] || Activity;
@@ -75,10 +75,10 @@ export function RecentActivityCard({ activity }: RecentActivityCardProps = {}) {
                 });
 
             const Content = (
-              <div className="flex items-start gap-3.5 px-4 lg:px-5 py-3 hover:bg-muted/40 transition-colors group">
+              <div className="flex items-start gap-3.5 px-4 lg:px-4.5 py-3 hover:bg-muted/30 transition-colors group">
                 <div
                   className={cn(
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 mt-0.5",
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 mt-0.5 shadow-2xs",
                     colors.bg
                   )}
                 >
@@ -89,7 +89,7 @@ export function RecentActivityCard({ activity }: RecentActivityCardProps = {}) {
                     <span className={cn("text-[10px] font-bold uppercase tracking-wider", colors.text)}>
                       {item.module}
                     </span>
-                    <span className="text-[10.5px] font-medium text-muted-foreground ml-auto shrink-0">
+                    <span className="text-[10.5px] font-medium text-muted-foreground ml-auto shrink-0 num-tabular">
                       {dateDisplay}
                     </span>
                   </div>
@@ -102,7 +102,7 @@ export function RecentActivityCard({ activity }: RecentActivityCardProps = {}) {
 
             if (item.targetRoute) {
               return (
-                <Link key={item.id} href={item.targetRoute} className="block cursor-pointer">
+                <Link key={item.id} href={item.targetRoute} className="block cursor-pointer focus-ring">
                   {Content}
                 </Link>
               );
@@ -118,9 +118,12 @@ export function RecentActivityCard({ activity }: RecentActivityCardProps = {}) {
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-border mt-auto">
-        <span className="text-xs text-muted-foreground">
+      <div className="px-4.5 py-2.5 border-t border-border/70 bg-muted/20 mt-auto flex items-center justify-between text-xs">
+        <span className="text-[11px] text-muted-foreground">
           Academic and institutional operational events
+        </span>
+        <span className="text-[11px] font-semibold text-muted-foreground">
+          Auto-synced
         </span>
       </div>
     </div>

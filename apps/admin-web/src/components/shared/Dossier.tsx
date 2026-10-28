@@ -64,9 +64,9 @@ export function Dossier({
           )}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border/80 bg-muted/20">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border/70 bg-muted/20">
             <div>
-              <h2 className="text-lg font-bold tracking-tight text-foreground">
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
                 {title}
               </h2>
               {subtitle && (
@@ -77,14 +77,14 @@ export function Dossier({
               onClick={onClose}
               type="button"
               aria-label="Close dossier"
-              className="p-2 rounded-xl hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="p-1.5 rounded-lg hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground cursor-pointer focus-ring"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Scrollable Body */}
-          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin space-y-6">
             {children}
           </div>
         </div>
@@ -101,11 +101,11 @@ export function DossierSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 last:mb-0">
+    <div className="last:mb-0">
       <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
         {title}
       </h3>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">{children}</div>
     </div>
   );
 }

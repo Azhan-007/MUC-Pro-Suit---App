@@ -178,9 +178,9 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
   const urgentCount = allItems.filter((i) => i.priority === "URGENT").length;
 
   return (
-    <div className="bg-card rounded-2xl border border-border h-full flex flex-col shadow-xs overflow-hidden transition-all duration-200">
+    <div className="bg-card rounded-xl border border-border/80 h-full flex flex-col shadow-xs overflow-hidden transition-all duration-200">
       {/* ─── 1. Header ─── */}
-      <div className="px-5 py-4 border-b border-border/80 bg-muted/20">
+      <div className="px-5 py-4 border-b border-border/70 bg-muted/20">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
@@ -188,7 +188,7 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-[15px] font-bold text-foreground tracking-tight">
+                <h3 className="text-sm lg:text-[15px] font-bold text-foreground tracking-tight">
                   Requires Your Attention
                 </h3>
                 {allItems.length > 0 && (
@@ -206,26 +206,26 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
 
           <div className="flex items-center gap-1.5 shrink-0">
             {urgentCount > 0 && (
-              <span className="text-[11px] font-bold text-rose-700 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60 rounded-full px-2.5 py-0.5 animate-pulse">
+              <span className="text-[10.5px] font-bold text-rose-700 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60 rounded-full px-2.5 py-0.5 animate-pulse">
                 {urgentCount} Urgent
               </span>
             )}
-            <span className="text-xs font-semibold text-muted-foreground bg-muted/80 rounded-full px-2.5 py-0.5 border border-border/60">
+            <span className="text-xs font-semibold text-muted-foreground bg-muted/70 rounded-full px-2.5 py-0.5 border border-border/60">
               {allItems.length} actionable
             </span>
           </div>
         </div>
 
         {/* ─── 2. Filter Pills ─── */}
-        <div className="flex items-center gap-1.5 mt-3.5 pt-3 border-t border-border/60 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border/60 overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab("ALL")}
             className={cn(
-              "px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer",
+              "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer focus-ring",
               activeTab === "ALL"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-2xs"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
             All
@@ -234,7 +234,7 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
                 "text-[10px] px-1.5 py-0.2 rounded-full",
                 activeTab === "ALL"
                   ? "bg-primary-foreground/20 text-primary-foreground font-bold"
-                  : "bg-border text-muted-foreground"
+                  : "bg-border/80 text-muted-foreground"
               )}
             >
               {allItems.length}
@@ -245,19 +245,19 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
             type="button"
             onClick={() => setActiveTab("CRITICAL")}
             className={cn(
-              "px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer",
+              "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer focus-ring",
               activeTab === "CRITICAL"
-                ? "bg-rose-600 text-white shadow-xs"
-                : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-rose-600 text-white shadow-2xs"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            <span>🚨 Urgent & High</span>
+            <span>Urgent & High</span>
             <span
               className={cn(
                 "text-[10px] px-1.5 py-0.2 rounded-full",
                 activeTab === "CRITICAL"
                   ? "bg-white/25 text-white font-bold"
-                  : "bg-border text-muted-foreground"
+                  : "bg-border/80 text-muted-foreground"
               )}
             >
               {criticalItems.length}
@@ -268,19 +268,19 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
             type="button"
             onClick={() => setActiveTab("APPROVALS")}
             className={cn(
-              "px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer",
+              "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer focus-ring",
               activeTab === "APPROVALS"
-                ? "bg-amber-600 text-white shadow-xs"
-                : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-amber-600 text-white shadow-2xs"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            <span>⚡ Approvals</span>
+            <span>Approvals</span>
             <span
               className={cn(
                 "text-[10px] px-1.5 py-0.2 rounded-full",
                 activeTab === "APPROVALS"
                   ? "bg-white/25 text-white font-bold"
-                  : "bg-border text-muted-foreground"
+                  : "bg-border/80 text-muted-foreground"
               )}
             >
               {approvalItems.length}
@@ -291,19 +291,19 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
             type="button"
             onClick={() => setActiveTab("OPERATIONS")}
             className={cn(
-              "px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer",
+              "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer focus-ring",
               activeTab === "OPERATIONS"
-                ? "bg-sky-600 text-white shadow-xs"
-                : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-sky-600 text-white shadow-2xs"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            <span>📋 Operations</span>
+            <span>Operations</span>
             <span
               className={cn(
                 "text-[10px] px-1.5 py-0.2 rounded-full",
                 activeTab === "OPERATIONS"
                   ? "bg-white/25 text-white font-bold"
-                  : "bg-border text-muted-foreground"
+                  : "bg-border/80 text-muted-foreground"
               )}
             >
               {operationItems.length}
@@ -315,7 +315,7 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
       {/* ─── 3. Cardlet List ─── */}
       <div
         className={cn(
-          "flex-1 p-4 space-y-2.5 transition-all",
+          "flex-1 p-3.5 space-y-2.5 transition-all",
           isExpanded ? "max-h-[580px] overflow-y-auto pr-2" : ""
         )}
       >
@@ -329,7 +329,7 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
               <Link
                 key={item.id}
                 href={item.targetRoute}
-                className="relative block rounded-xl border border-border/80 bg-card hover:bg-muted/30 hover:border-primary/40 hover:shadow-xs transition-all p-3.5 pl-4 group"
+                className="relative block rounded-xl border border-border/80 bg-card hover:bg-muted/30 hover:border-primary/35 transition-all p-3.5 pl-4 group focus-ring shadow-2xs"
               >
                 {/* Urgency Color Accent Indicator on the Left Edge */}
                 <div
@@ -383,11 +383,11 @@ export function AttentionCard({ items }: AttentionCardProps = {}) {
                   </div>
 
                   {/* Bottom Line: Right-Aligned Action Chip */}
-                  <div className="flex items-center justify-between pt-1 border-t border-border/40 mt-0.5">
-                    <span className="text-[11px] text-muted-foreground/80 font-medium">
+                  <div className="flex items-center justify-between pt-1 border-t border-border/50 mt-0.5">
+                    <span className="text-[11px] text-muted-foreground font-medium">
                       Requires Master Admin sign-off
                     </span>
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-150">
                       {item.actionLabel}
                       <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
                     </span>

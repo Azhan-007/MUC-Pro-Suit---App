@@ -352,35 +352,35 @@ export function FacultyClient({
         <button
           type="button"
           onClick={handleExportCSV}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border rounded-xl text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors shadow-2xs cursor-pointer"
+          className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-background border border-border/80 rounded-lg text-xs font-semibold text-foreground/80 hover:text-foreground hover:bg-muted/70 hover:border-border transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
           title="Export faculty roster to CSV"
         >
-          <Download className="w-3.5 h-3.5 text-muted-foreground" />
-          Export ({filteredFaculty.length})
+          <Download className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span>Export ({filteredFaculty.length})</span>
         </button>
         <button
           type="button"
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-xl text-xs font-semibold hover:bg-primary/90 transition-colors shadow-2xs cursor-pointer"
+          className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs hover:shadow active:scale-[0.98] cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5" />
-          Add Faculty
+          <Plus className="w-3.5 h-3.5 shrink-0" />
+          <span>Add Faculty</span>
         </button>
       </NavbarActions>
 
       {/* ─── 2. KPI Metrics Bar ─── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Total Faculty */}
-        <div className="p-3.5 rounded-2xl bg-card border border-border shadow-2xs flex items-center justify-between">
+        <div className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs flex items-center justify-between">
           <div className="space-y-0.5">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
               Total Faculty
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold tracking-tight text-foreground">
+              <span className="text-xl font-bold tracking-tight text-foreground num-tabular">
                 {facultyList.length}
               </span>
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                 100% Active
               </span>
             </div>
@@ -391,16 +391,16 @@ export function FacultyClient({
         </div>
 
         {/* Department Leadership (HODs) */}
-        <div className="p-3.5 rounded-2xl bg-card border border-border shadow-2xs flex items-center justify-between">
+        <div className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs flex items-center justify-between">
           <div className="space-y-0.5">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
               Dept Leadership
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold tracking-tight text-foreground">
+              <span className="text-xl font-bold tracking-tight text-foreground num-tabular">
                 {facultyList.filter((f) => f.isHod).length}
               </span>
-              <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold bg-purple-50 dark:bg-purple-950/50 px-1.5 py-0.5 rounded-full border border-purple-200 dark:border-purple-800">
+              <span className="text-[10px] text-purple-700 dark:text-purple-400 font-semibold bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800">
                 HOD Officers
               </span>
             </div>
@@ -411,16 +411,16 @@ export function FacultyClient({
         </div>
 
         {/* Shift Coverage */}
-        <div className="p-3.5 rounded-2xl bg-card border border-border shadow-2xs flex items-center justify-between">
+        <div className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs flex items-center justify-between">
           <div className="space-y-0.5">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
               Shift Coverage
             </span>
-            <div className="flex items-baseline gap-1.5 text-xs font-semibold">
-              <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+            <div className="flex items-baseline gap-1.5 text-xs font-semibold num-tabular">
+              <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
                 Shift I: {facultyList.filter((f) => f.primaryShift === "SHIFT_I").length}
               </span>
-              <span className="text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-1.5 py-0.5 rounded border border-sky-200 dark:border-sky-800">
+              <span className="text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800">
                 Shift II: {facultyList.filter((f) => f.primaryShift === "SHIFT_II").length}
               </span>
             </div>
@@ -431,13 +431,13 @@ export function FacultyClient({
         </div>
 
         {/* Assigned Curriculum Load */}
-        <div className="p-3.5 rounded-2xl bg-card border border-border shadow-2xs flex items-center justify-between">
+        <div className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs flex items-center justify-between">
           <div className="space-y-0.5">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
               Academic Workload
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold tracking-tight text-foreground">
+              <span className="text-xl font-bold tracking-tight text-foreground num-tabular">
                 {facultyList.reduce((acc, f) => acc + f.workload.totalCredits, 0)}
               </span>
               <span className="text-[10px] text-muted-foreground font-medium">
@@ -713,39 +713,39 @@ export function FacultyClient({
       </div>
 
       {/* ─── 4. Faculty Table Workspace ─── */}
-      <div className="rounded-2xl border border-border bg-card shadow-2xs overflow-hidden">
+      <div className="space-y-2.5">
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-xs text-left min-w-[1050px]">
-            <thead className="text-[11px] text-muted-foreground uppercase tracking-wider bg-muted/30 border-b border-border font-bold">
+          <table className="erp-card-table text-xs text-left min-w-[1050px]">
+            <thead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 select-none">
               <tr>
-                <th className="px-5 py-3.5 whitespace-nowrap">Faculty Member</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Employee ID</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Department & Designation</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Academic Load</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Class Advisory</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Shift</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Status</th>
-                <th className="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>
+                <th scope="col" className="px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground/90 whitespace-nowrap text-left align-middle font-bold min-w-[260px]">Faculty Member</th>
+                <th scope="col" className="px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground/90 whitespace-nowrap text-left align-middle font-bold w-[130px]">Employee ID</th>
+                <th scope="col" className="px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground/90 whitespace-nowrap text-left align-middle font-bold min-w-[200px]">Department & Designation</th>
+                <th scope="col" className="px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground/90 whitespace-nowrap text-left align-middle font-bold w-[160px]">Academic Load</th>
+                <th scope="col" className="px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground/90 whitespace-nowrap text-left align-middle font-bold w-[145px]">Class Advisory</th>
+                <th scope="col" className="px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground/90 whitespace-nowrap text-left align-middle font-bold w-[140px]">Shift</th>
+                <th scope="col" className="px-4 py-3 text-[11px] uppercase tracking-wider text-muted-foreground/90 whitespace-nowrap text-left align-middle font-bold w-[120px]">Status</th>
+                <th scope="col" className="px-5 py-3 text-[11px] uppercase tracking-wider text-muted-foreground/90 text-right whitespace-nowrap align-middle font-bold w-[135px]">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/80">
+            <tbody>
               {filteredFaculty.map((faculty) => {
-                const initials = `${faculty.firstName[0] || ""}${faculty.lastName[0] || ""}`.toUpperCase();
+                const initials = `${faculty.firstName?.[0] || ""}${faculty.lastName?.[0] || ""}`.toUpperCase() || "FA";
                 return (
                   <tr
                     key={faculty.id}
                     onClick={() => setSelectedFaculty(faculty)}
-                    className="hover:bg-muted/40 transition-colors cursor-pointer group h-16"
+                    className="group"
                   >
                     {/* Faculty Identity */}
-                    <td className="px-5 py-3.5 align-middle whitespace-nowrap">
+                    <td className="px-5 py-3.5 align-middle whitespace-nowrap min-w-[260px]">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0 group-hover:scale-105 transition-transform border border-primary/20">
+                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 flex items-center justify-center text-xs font-black shrink-0 group-hover:scale-105 group-hover:border-emerald-500/60 transition-transform shadow-2xs">
                           {initials}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 font-bold text-foreground group-hover:text-primary transition-colors text-xs whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 font-bold text-foreground group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors text-[13px] whitespace-nowrap">
                             <span>{faculty.fullName}</span>
                             {faculty.isHod && (
                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-[10px] font-semibold text-purple-700 dark:text-purple-300 shrink-0">
@@ -754,7 +754,7 @@ export function FacultyClient({
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-muted-foreground whitespace-nowrap truncate max-w-[200px]" title={faculty.specialization}>
+                          <div className="text-[11.5px] text-muted-foreground whitespace-nowrap truncate max-w-[200px]" title={faculty.specialization}>
                             {faculty.specialization}
                           </div>
                         </div>
@@ -762,38 +762,38 @@ export function FacultyClient({
                     </td>
 
                     {/* Employee ID */}
-                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                      <span className="font-mono text-xs font-semibold text-foreground bg-muted/70 px-2 py-0.5 rounded-md border border-border/60 whitespace-nowrap">
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap w-[130px]">
+                      <span className="text-[13px] font-bold text-foreground tabular-nums select-all group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
                         {faculty.employeeId}
                       </span>
-                      <span className="text-[10px] text-muted-foreground block mt-0.5 whitespace-nowrap">
+                      <span className="text-[10px] text-muted-foreground block mt-0.5 whitespace-nowrap font-medium">
                         Faculty ID
                       </span>
                     </td>
 
                     {/* Department & Designation */}
-                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap min-w-[200px]">
                       <div className="font-semibold text-foreground text-xs whitespace-nowrap">
                         {faculty.departmentName}
                       </div>
-                      <div className="text-[11px] text-muted-foreground whitespace-nowrap">
+                      <div className="text-[11px] text-muted-foreground whitespace-nowrap font-medium">
                         {faculty.designation}
                       </div>
                     </td>
 
                     {/* Academic Workload */}
-                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap w-[160px]">
                       {faculty.workload.assignedSubjectsCount > 0 ? (
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5 whitespace-nowrap">
                             <span className="font-semibold text-foreground text-xs">
                               {faculty.workload.assignedSubjectsCount} {faculty.workload.assignedSubjectsCount === 1 ? "Subject" : "Subjects"}
                             </span>
-                            <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.2 rounded whitespace-nowrap">
+                            <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 px-1.5 py-0.2 rounded whitespace-nowrap">
                               {faculty.workload.totalCredits} Credits
                             </span>
                           </div>
-                          <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[170px] whitespace-nowrap" title={faculty.workload.subjects.map((s) => `${s.code} (${s.name})`).join(", ")}>
+                          <div className="text-[11px] text-muted-foreground font-medium truncate max-w-[170px] whitespace-nowrap" title={faculty.workload.subjects.map((s) => `${s.code} (${s.name})`).join(", ")}>
                             {faculty.workload.subjects.map((s) => s.code).join(", ")}
                           </div>
                         </div>
@@ -815,21 +815,21 @@ export function FacultyClient({
                     </td>
 
                     {/* Class Advisory */}
-                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap w-[145px]">
                       {faculty.workload.advisoryClasses.length > 0 ? (
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1 whitespace-nowrap">
                             {faculty.workload.advisoryClasses.map((adv) => (
                               <span
                                 key={adv.classId}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-md text-[10.5px] font-semibold text-emerald-800 dark:text-emerald-300 whitespace-nowrap"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-md text-[10.5px] font-semibold text-emerald-800 dark:text-emerald-300 whitespace-nowrap shadow-2xs"
                               >
                                 <GraduationCap className="w-3 h-3 shrink-0" />
                                 {adv.classCode}
                               </span>
                             ))}
                           </div>
-                          <span className="text-[10px] text-emerald-700/70 dark:text-emerald-400/70 block whitespace-nowrap">
+                          <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 block whitespace-nowrap font-medium">
                             Class Advisor
                           </span>
                         </div>
@@ -846,10 +846,10 @@ export function FacultyClient({
                     </td>
 
                     {/* Shift */}
-                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap w-[140px]">
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold border whitespace-nowrap",
+                          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold border whitespace-nowrap shadow-2xs",
                           faculty.primaryShift === "SHIFT_I"
                             ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                             : faculty.primaryShift === "SHIFT_II"
@@ -857,9 +857,10 @@ export function FacultyClient({
                             : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
                         )}
                       >
+                        <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", faculty.primaryShift === "SHIFT_I" ? "bg-emerald-500" : "bg-sky-500")} />
                         {faculty.shiftLabel}
                       </span>
-                      <span className="text-[10px] text-muted-foreground block mt-0.5 whitespace-nowrap">
+                      <span className="text-[10px] text-muted-foreground block mt-0.5 whitespace-nowrap font-medium">
                         {faculty.primaryShift === "SHIFT_I"
                           ? "Morning Session"
                           : faculty.primaryShift === "SHIFT_II"
@@ -869,28 +870,28 @@ export function FacultyClient({
                     </td>
 
                     {/* Status */}
-                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap w-[120px]">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap shadow-2xs">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                         {faculty.status}
                       </span>
-                      <span className="text-[10px] text-muted-foreground/60 block mt-0.5 whitespace-nowrap">
+                      <span className="text-[10px] text-muted-foreground/60 block mt-0.5 whitespace-nowrap font-medium">
                         In Service
                       </span>
                     </td>
 
                     {/* Action */}
-                    <td className="px-5 py-3.5 align-middle text-right whitespace-nowrap">
+                    <td className="px-5 py-3.5 align-middle text-right whitespace-nowrap w-[135px]">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedFaculty(faculty);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted/60 hover:bg-primary hover:text-primary-foreground rounded-lg text-xs font-semibold text-foreground transition-all cursor-pointer whitespace-nowrap"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/90 dark:border-emerald-800/80 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white hover:border-emerald-600 shadow-2xs cursor-pointer group-hover:border-emerald-400/80 group-hover:shadow-xs transition-all duration-150 whitespace-nowrap"
                       >
-                        <span>Dossier</span>
-                        <ArrowRight className="w-3 h-3" />
+                        <UserCheck className="w-3.5 h-3.5 shrink-0" />
+                        <span>View Profile</span>
                       </button>
                     </td>
                   </tr>
@@ -901,7 +902,7 @@ export function FacultyClient({
         </div>
 
         {/* Mobile Card View */}
-        <div className="md:hidden divide-y divide-border">
+        <div className="md:hidden space-y-2.5">
           {filteredFaculty.map((faculty) => {
             const initials = `${faculty.firstName[0] || ""}${faculty.lastName[0] || ""}`.toUpperCase();
             return (

@@ -48,6 +48,152 @@ interface StudentsClientProps {
   metrics: StudentRegisterMetrics;
 }
 
+interface CustomSelectOption {
+  value: string | number;
+  label: string;
+  sublabel?: string;
+  badge?: string;
+  badgeVariant?: "emerald" | "indigo" | "default";
+}
+
+interface CustomSelectProps {
+  value: string | number;
+  onChange: (val: any) => void;
+  options: CustomSelectOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  placeholder = "Select an option",
+  disabled = false,
+  className,
+}: CustomSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const selectedOption = options.find((o) => o.value === value);
+
+  return (
+    <div className={cn("relative w-full", className)} ref={containerRef}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "w-full h-10 px-3.5 bg-background border rounded-lg text-xs sm:text-[13px] font-medium text-foreground flex items-center justify-between gap-2 cursor-pointer shadow-2xs transition-all text-left",
+          isOpen
+            ? "border-emerald-500 ring-2 ring-emerald-500/15 bg-background"
+            : "border-border/80 hover:border-border hover:bg-muted/10",
+          disabled && "opacity-50 cursor-not-allowed",
+          !selectedOption && "text-muted-foreground/60 font-normal"
+        )}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1 truncate">
+          <span className="truncate">
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+          {selectedOption?.badge && (
+            <span
+              className={cn(
+                "text-[9.5px] px-1.5 py-0.5 rounded font-semibold shrink-0 border",
+                selectedOption.badgeVariant === "emerald"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
+                  : selectedOption.badgeVariant === "indigo"
+                  ? "bg-indigo-50 text-indigo-700 border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800"
+                  : "bg-muted text-muted-foreground border-border"
+              )}
+            >
+              {selectedOption.badge}
+            </span>
+          )}
+        </div>
+        <ChevronDown
+          className={cn(
+            "w-4 h-4 text-muted-foreground/70 shrink-0 transition-transform duration-200",
+            isOpen && "rotate-180 text-emerald-600"
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-card border border-border/80 rounded-xl shadow-xl z-50 p-1.5 max-h-56 overflow-y-auto scrollbar-thin ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100">
+          {options.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-muted-foreground text-center">
+              No options available
+            </div>
+          ) : (
+            options.map((opt) => {
+              const isSelected = opt.value === value;
+              return (
+                <button
+                  key={String(opt.value)}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between gap-2",
+                    isSelected
+                      ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
+                      : "hover:bg-muted/70 text-foreground"
+                  )}
+                >
+                  <div className="min-w-0 flex-1 flex items-center gap-2">
+                    <span className="truncate">{opt.label}</span>
+                    {opt.sublabel && (
+                      <span className="text-[10px] text-muted-foreground font-normal shrink-0">
+                        ({opt.sublabel})
+                      </span>
+                    )}
+                    {opt.badge && (
+                      <span
+                        className={cn(
+                          "text-[9.5px] px-1.5 py-0.5 rounded font-semibold shrink-0 border",
+                          opt.badgeVariant === "emerald"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
+                            : opt.badgeVariant === "indigo"
+                            ? "bg-indigo-50 text-indigo-700 border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800"
+                            : "bg-muted text-muted-foreground border-border"
+                        )}
+                      >
+                        {opt.badge}
+                      </span>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StudentsClient({
   students: initialStudents,
   departments,
@@ -360,19 +506,19 @@ export function StudentsClient({
         <button
           type="button"
           onClick={handleExportCSV}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border rounded-xl text-xs font-semibold text-foreground hover:bg-muted/80 transition-colors shadow-2xs cursor-pointer"
+          className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-background border border-border/80 rounded-lg text-xs font-semibold text-foreground/80 hover:text-foreground hover:bg-muted/70 hover:border-border transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
           title="Export student roster to CSV"
         >
-          <Download className="w-3.5 h-3.5 text-muted-foreground" />
-          Export ({filteredStudents.length})
+          <Download className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span>Export ({filteredStudents.length})</span>
         </button>
         <button
           type="button"
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-xl text-xs font-semibold hover:bg-primary/90 transition-colors shadow-xs cursor-pointer"
+          className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs hover:shadow active:scale-[0.98] cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5" />
-          Add Student
+          <Plus className="w-3.5 h-3.5 shrink-0" />
+          <span>Add Student</span>
         </button>
       </NavbarActions>
 
@@ -397,21 +543,21 @@ export function StudentsClient({
 
         {/* Real KPI Metrics Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
-          <div className="px-3.5 py-2 rounded-xl bg-muted/40 border border-border/70 flex flex-col justify-center">
-            <span className="text-[10.5px] font-medium text-muted-foreground">Total Enrolled</span>
-            <span className="text-base font-bold text-foreground">{initialMetrics.totalStudents}</span>
+          <div className="px-3.5 py-2.5 rounded-xl bg-card border border-border/80 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-semibold text-muted-foreground">Total Enrolled</span>
+            <span className="text-lg font-bold text-foreground num-tabular mt-0.5">{initialMetrics.totalStudents}</span>
           </div>
-          <div className="px-3.5 py-2 rounded-xl bg-muted/40 border border-border/70 flex flex-col justify-center">
-            <span className="text-[10.5px] font-medium text-emerald-700 dark:text-emerald-400">Shift I (Aided)</span>
-            <span className="text-base font-bold text-foreground">{initialMetrics.shift1Count}</span>
+          <div className="px-3.5 py-2.5 rounded-xl bg-card border border-border/80 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Shift I (Aided)</span>
+            <span className="text-lg font-bold text-foreground num-tabular mt-0.5">{initialMetrics.shift1Count}</span>
           </div>
-          <div className="px-3.5 py-2 rounded-xl bg-muted/40 border border-border/70 flex flex-col justify-center">
-            <span className="text-[10.5px] font-medium text-indigo-700 dark:text-indigo-400">Shift II (Self-Fin)</span>
-            <span className="text-base font-bold text-foreground">{initialMetrics.shift2Count}</span>
+          <div className="px-3.5 py-2.5 rounded-xl bg-card border border-border/80 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-semibold text-teal-700 dark:text-teal-400">Shift II (Self-Fin)</span>
+            <span className="text-lg font-bold text-foreground num-tabular mt-0.5">{initialMetrics.shift2Count}</span>
           </div>
-          <div className="px-3.5 py-2 rounded-xl bg-muted/40 border border-border/70 flex flex-col justify-center">
-            <span className="text-[10.5px] font-medium text-muted-foreground">Active Roster</span>
-            <span className="text-base font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+          <div className="px-3.5 py-2.5 rounded-xl bg-card border border-border/80 shadow-2xs flex flex-col justify-center">
+            <span className="text-[11px] font-semibold text-muted-foreground">Active Roster</span>
+            <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400 num-tabular flex items-center gap-1.5 mt-0.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               {initialMetrics.activeCount}
             </span>
@@ -430,7 +576,7 @@ export function StudentsClient({
               placeholder="Search by student name, reg. number, admission no, email, or phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-9 py-2 bg-background border border-border/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/70"
+              className="w-full h-10 pl-9.5 pr-9 bg-background border border-border/80 rounded-lg text-xs sm:text-[13px] focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 transition-all placeholder:text-muted-foreground/60"
             />
             {search && (
               <button
@@ -443,13 +589,13 @@ export function StudentsClient({
             )}
           </div>
 
-          {/* Shift Filter Pills */}
-          <div className="flex items-center gap-1.5 p-1 bg-muted/50 rounded-xl border border-border/60 shrink-0">
+          {/* Shift Filter Segmented Control */}
+          <div className="flex items-center h-10 p-1 bg-muted/60 rounded-lg border border-border/70 shrink-0">
             <button
               type="button"
               onClick={() => setSelectedShift("")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                "h-8 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer",
                 selectedShift === ""
                   ? "bg-card text-foreground shadow-2xs border border-border/80 font-bold"
                   : "text-muted-foreground hover:text-foreground"
@@ -461,7 +607,7 @@ export function StudentsClient({
               type="button"
               onClick={() => setSelectedShift("SHIFT_I")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                "h-8 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer",
                 selectedShift === "SHIFT_I"
                   ? "bg-emerald-600 text-white shadow-2xs font-bold"
                   : "text-muted-foreground hover:text-foreground"
@@ -473,7 +619,7 @@ export function StudentsClient({
               type="button"
               onClick={() => setSelectedShift("SHIFT_II")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                "h-8 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer",
                 selectedShift === "SHIFT_II"
                   ? "bg-indigo-600 text-white shadow-2xs font-bold"
                   : "text-muted-foreground hover:text-foreground"
@@ -489,15 +635,15 @@ export function StudentsClient({
               type="button"
               onClick={() => setDeptDropdownOpen(!deptDropdownOpen)}
               className={cn(
-                "w-full sm:w-auto px-3.5 py-2 bg-background border rounded-xl text-xs font-semibold flex items-center justify-between gap-2 cursor-pointer transition-all",
+                "h-10 px-3.5 bg-background border rounded-lg text-xs font-medium flex items-center justify-between gap-2.5 cursor-pointer transition-all",
                 selectedDept
-                  ? "border-primary text-primary bg-primary/5"
-                  : "border-border text-foreground hover:bg-muted/40"
+                  ? "border-emerald-500/60 text-emerald-800 dark:text-emerald-300 bg-emerald-500/5 font-semibold"
+                  : "border-border/80 text-foreground/90 hover:bg-muted/50 hover:border-border"
               )}
             >
-              <div className="flex items-center gap-1.5 truncate">
-                <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="truncate">
+              <div className="flex items-center gap-2 truncate">
+                <Building2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="truncate max-w-[150px]">
                   {selectedDeptObj ? selectedDeptObj.name : "All Departments"}
                 </span>
               </div>
@@ -505,7 +651,7 @@ export function StudentsClient({
             </button>
 
             {deptDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-60 bg-card border border-border rounded-xl shadow-lg z-30 p-1.5 max-h-64 overflow-y-auto scrollbar-thin">
+              <div className="absolute right-0 top-full mt-1.5 w-64 bg-card border border-border/80 rounded-xl shadow-xl z-30 p-1.5 max-h-64 overflow-y-auto scrollbar-thin ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100">
                 <button
                   type="button"
                   onClick={() => {
@@ -513,16 +659,16 @@ export function StudentsClient({
                     setDeptDropdownOpen(false);
                   }}
                   className={cn(
-                    "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between",
+                    "w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between",
                     !selectedDept
-                      ? "bg-primary/10 text-primary font-bold"
+                      ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
                       : "hover:bg-muted/70 text-foreground"
                   )}
                 >
-                  All Departments
-                  {!selectedDept && <Check className="w-3.5 h-3.5" />}
+                  <span>All Departments</span>
+                  {!selectedDept && <Check className="w-3.5 h-3.5 text-emerald-600" />}
                 </button>
-                <div className="h-px bg-border my-1" />
+                <div className="h-px bg-border/60 my-1" />
                 {departments.map((d) => (
                   <button
                     key={d.id}
@@ -532,14 +678,14 @@ export function StudentsClient({
                       setDeptDropdownOpen(false);
                     }}
                     className={cn(
-                      "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between",
+                      "w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between",
                       selectedDept === d.id
-                        ? "bg-primary/10 text-primary font-bold"
+                        ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
                         : "hover:bg-muted/70 text-foreground"
                     )}
                   >
                     <span className="truncate">{d.name}</span>
-                    {selectedDept === d.id && <Check className="w-3.5 h-3.5 shrink-0" />}
+                    {selectedDept === d.id && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
                   </button>
                 ))}
               </div>
@@ -552,15 +698,15 @@ export function StudentsClient({
               type="button"
               onClick={() => setCourseDropdownOpen(!courseDropdownOpen)}
               className={cn(
-                "w-full sm:w-auto px-3.5 py-2 bg-background border rounded-xl text-xs font-semibold flex items-center justify-between gap-2 cursor-pointer transition-all",
+                "h-10 px-3.5 bg-background border rounded-lg text-xs font-medium flex items-center justify-between gap-2.5 cursor-pointer transition-all",
                 selectedCourse
-                  ? "border-primary text-primary bg-primary/5"
-                  : "border-border text-foreground hover:bg-muted/40"
+                  ? "border-emerald-500/60 text-emerald-800 dark:text-emerald-300 bg-emerald-500/5 font-semibold"
+                  : "border-border/80 text-foreground/90 hover:bg-muted/50 hover:border-border"
               )}
             >
-              <div className="flex items-center gap-1.5 truncate">
-                <GraduationCap className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="truncate">
+              <div className="flex items-center gap-2 truncate">
+                <GraduationCap className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="truncate max-w-[170px]">
                   {selectedCourseObj
                     ? `${selectedCourseObj.code} • ${selectedCourseObj.name}`
                     : "All Courses"}
@@ -570,7 +716,7 @@ export function StudentsClient({
             </button>
 
             {courseDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-72 bg-card border border-border rounded-xl shadow-lg z-30 p-1.5 max-h-72 overflow-y-auto scrollbar-thin">
+              <div className="absolute right-0 top-full mt-1.5 w-76 bg-card border border-border/80 rounded-xl shadow-xl z-30 p-1.5 max-h-72 overflow-y-auto scrollbar-thin ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100">
                 <button
                   type="button"
                   onClick={() => {
@@ -578,18 +724,18 @@ export function StudentsClient({
                     setCourseDropdownOpen(false);
                   }}
                   className={cn(
-                    "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between",
+                    "w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between",
                     !selectedCourse
-                      ? "bg-primary/10 text-primary font-bold"
+                      ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
                       : "hover:bg-muted/70 text-foreground"
                   )}
                 >
-                  All Courses
-                  {!selectedCourse && <Check className="w-3.5 h-3.5" />}
+                  <span>All Courses</span>
+                  {!selectedCourse && <Check className="w-3.5 h-3.5 text-emerald-600" />}
                 </button>
 
                 {/* Section A: Shift I Aided */}
-                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded mt-1 mb-0.5">
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 rounded-md mt-1 mb-0.5">
                   Shift I — Aided
                 </div>
                 {shift1Courses.map((c) => (
@@ -603,7 +749,7 @@ export function StudentsClient({
                     className={cn(
                       "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between",
                       selectedCourse === c.id
-                        ? "bg-primary/10 text-primary font-bold"
+                        ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 font-bold"
                         : "hover:bg-muted/70 text-foreground"
                     )}
                   >
@@ -612,13 +758,13 @@ export function StudentsClient({
                       <p className="text-[10px] text-muted-foreground truncate">{c.name}</p>
                     </div>
                     {selectedCourse === c.id && (
-                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     )}
                   </button>
                 ))}
 
                 {/* Section B: Shift II Self-Financing */}
-                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 bg-indigo-500/10 rounded mt-2 mb-0.5">
+                <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 bg-indigo-500/10 rounded-md mt-2 mb-0.5">
                   Shift II — Self-Financing
                 </div>
                 {shift2Courses.map((c) => (
@@ -632,7 +778,7 @@ export function StudentsClient({
                     className={cn(
                       "w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors flex items-center justify-between",
                       selectedCourse === c.id
-                        ? "bg-primary/10 text-primary font-bold"
+                        ? "bg-indigo-500/10 text-indigo-800 dark:text-indigo-300 font-bold"
                         : "hover:bg-muted/70 text-foreground"
                     )}
                   >
@@ -641,7 +787,7 @@ export function StudentsClient({
                       <p className="text-[10px] text-muted-foreground truncate">{c.name}</p>
                     </div>
                     {selectedCourse === c.id && (
-                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                     )}
                   </button>
                 ))}
@@ -654,34 +800,50 @@ export function StudentsClient({
             <button
               type="button"
               onClick={resetFilters}
-              className="px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+              className="h-10 px-3 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
-              Reset Filters
+              <span>Reset Filters</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* ─── 4. Student Roster Table (Desktop & Tablet) ─── */}
-      <div className="rounded-2xl border border-border/80 bg-card shadow-xs overflow-hidden">
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider bg-muted/30 border-b border-border">
+      {/* ─── 4. Student Roster Table (Desktop, Tablet & Mobile) ─── */}
+      <div className="rounded-2xl border border-border/80 bg-card shadow-2xs overflow-hidden">
+        {/* Desktop & Tablet Unified Table View */}
+        <div className="hidden md:block overflow-x-auto scrollbar-thin">
+          <table className="w-full text-left border-collapse min-w-[980px]">
+            <thead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80 bg-muted/40 border-b border-border/70 select-none">
               <tr>
-                <th className="px-5 py-3.5">Reg. Number</th>
-                <th className="px-5 py-3.5">Student</th>
-                <th className="px-5 py-3.5">Course</th>
-                <th className="px-5 py-3.5">Class / Semester</th>
-                <th className="px-5 py-3.5">Shift</th>
-                <th className="px-5 py-3.5">Department</th>
-                <th className="px-5 py-3.5">Status</th>
-                <th className="px-4 py-3.5 text-right">Actions</th>
+                <th scope="col" className="px-4 py-3 w-[130px] text-center align-middle font-bold">
+                  Reg. Number
+                </th>
+                <th scope="col" className="px-4 py-3 min-w-[240px] text-center align-middle font-bold">
+                  Student Identity
+                </th>
+                <th scope="col" className="px-4 py-3 min-w-[200px] text-center align-middle font-bold">
+                  Course / Program
+                </th>
+                <th scope="col" className="px-4 py-3 w-[140px] text-center align-middle font-bold">
+                  Class / Semester
+                </th>
+                <th scope="col" className="px-4 py-3 w-[150px] text-center align-middle font-bold">
+                  Shift
+                </th>
+                <th scope="col" className="px-4 py-3 min-w-[170px] text-center align-middle font-bold">
+                  Department
+                </th>
+                <th scope="col" className="px-4 py-3 w-[120px] text-center align-middle font-bold">
+                  Status
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/70">
+            <tbody className="divide-y divide-border/60">
               {filteredStudents.map((student) => {
-                const initials = `${student.firstName[0] || ""}${student.lastName[0] || ""}`.toUpperCase();
+                const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST";
+                const cleanClassLabel = student.classYearLabel.replace(/_/g, " ");
+                const cleanCourseCode = student.courseCode.replace(/_/g, " ");
 
                 return (
                   <tr
@@ -690,91 +852,100 @@ export function StudentsClient({
                     className="hover:bg-muted/30 transition-colors cursor-pointer group"
                   >
                     {/* Reg Number & Admission */}
-                    <td className="px-5 py-3.5 font-medium whitespace-nowrap">
-                      <span className="font-mono text-xs font-bold text-foreground bg-muted/70 px-2 py-0.5 rounded-md border border-border/60">
-                        {student.registrationNumber}
-                      </span>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {student.admissionNumber}
-                      </p>
+                    <td className="px-4 py-3 align-middle whitespace-nowrap w-[130px] text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="font-mono text-xs font-bold text-foreground tabular-nums select-all group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                          {student.registrationNumber}
+                        </span>
+                        <div className="text-[11px] text-muted-foreground flex items-center justify-center gap-1 mt-0.5">
+                          <span className="text-[9.5px] uppercase font-semibold text-muted-foreground/60 tracking-wider">Adm:</span>
+                          <span className="text-foreground/75 font-semibold tabular-nums">{student.admissionNumber}</span>
+                        </div>
+                      </div>
                     </td>
 
                     {/* Student Identity */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-xs font-bold shrink-0">
+                    <td className="px-4 py-3 align-middle min-w-[240px]">
+                      <div className="w-[230px] mx-auto flex items-center gap-3 text-left">
+                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs group-hover:border-emerald-500/60 transition-colors">
                           {initials}
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-foreground text-sm leading-snug group-hover:text-primary transition-colors truncate">
+                        <div className="min-w-0 flex-1 text-left">
+                          <p className="font-bold text-foreground text-[13px] leading-snug group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors truncate">
                             {student.fullName}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {student.email}
+                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate flex items-center gap-1.5 font-normal">
+                            <Mail className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+                            <span className="truncate">{student.email}</span>
                           </p>
                         </div>
                       </div>
                     </td>
 
                     {/* Course */}
-                    <td className="px-5 py-3.5">
-                      <p className="font-bold text-foreground text-xs">
-                        {student.courseCode}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground truncate max-w-[200px]" title={student.courseName}>
-                        {student.courseName}
-                      </p>
+                    <td className="px-4 py-3 align-middle min-w-[200px] text-center">
+                      <div className="flex flex-col items-center gap-1 max-w-[220px] mx-auto text-center">
+                        <p className="font-semibold text-xs text-foreground leading-snug truncate w-full" title={student.courseName}>
+                          {student.courseName}
+                        </p>
+                        <span className="inline-flex items-center h-5 px-2 rounded text-[10.5px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 tracking-wide">
+                          {cleanCourseCode}
+                        </span>
+                      </div>
                     </td>
 
-                    {/* Academic Class & Semester (MUC Rule 2 & 4: I BCA · Sem 1) */}
-                    <td className="px-5 py-3.5 whitespace-nowrap">
-                      <span className="font-semibold text-xs text-foreground">
-                        {student.classYearLabel}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground block">
-                        Semester {student.currentSemester}
-                      </span>
+                    {/* Academic Class & Semester (MUC Rule 2 & 4) */}
+                    <td className="px-4 py-3 align-middle whitespace-nowrap w-[140px] text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="inline-flex items-center h-5 px-2 rounded text-[10.5px] font-semibold text-foreground/90 bg-muted/70 border border-border/80">
+                          {cleanClassLabel}
+                        </span>
+                        <span className="text-[11px] font-medium text-muted-foreground block">
+                          Semester {student.currentSemester}
+                        </span>
+                      </div>
                     </td>
 
                     {/* Shift Badge (MUC Rule 4) */}
-                    <td className="px-5 py-3.5 whitespace-nowrap">
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold border",
-                          student.shift === "SHIFT_I"
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200/60 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800/60"
-                            : "bg-indigo-50 text-indigo-700 border-indigo-200/60 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800/60"
-                        )}
-                      >
-                        {student.shiftLabel}
-                      </span>
+                    <td className="px-4 py-3 align-middle whitespace-nowrap w-[150px] text-center">
+                      <div className="flex justify-center">
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-semibold border",
+                            student.shift === "SHIFT_I"
+                              ? "bg-emerald-50/90 text-emerald-800 border-emerald-200/90 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800"
+                              : "bg-indigo-50/90 text-indigo-800 border-indigo-200/90 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "h-1.5 w-1.5 rounded-full shrink-0",
+                              student.shift === "SHIFT_I" ? "bg-emerald-600 dark:bg-emerald-400" : "bg-indigo-600 dark:bg-indigo-400"
+                            )}
+                          />
+                          {student.shiftLabel}
+                        </span>
+                      </div>
                     </td>
 
                     {/* Department */}
-                    <td className="px-5 py-3.5 text-xs text-muted-foreground">
-                      {student.departmentName}
+                    <td className="px-4 py-3 align-middle min-w-[170px] text-center">
+                      <div className="flex items-center justify-center gap-2 text-xs font-medium text-foreground/85">
+                        <Building2 className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                        <span className="truncate max-w-[160px]" title={student.departmentName}>
+                          {student.departmentName}
+                        </span>
+                      </div>
                     </td>
 
                     {/* Status */}
-                    <td className="px-5 py-3.5 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        {student.status}
-                      </span>
-                    </td>
-
-                    {/* Row Actions Menu */}
-                    <td className="px-4 py-3.5 text-right whitespace-nowrap relative">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedStudent(student);
-                        }}
-                        className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all cursor-pointer"
-                      >
-                        View Profile
-                      </button>
+                    <td className="px-4 py-3 align-middle whitespace-nowrap w-[120px] text-center">
+                      <div className="flex justify-center">
+                        <span className="inline-flex items-center gap-1.5 h-6 px-2.5 text-[10.5px] font-semibold tracking-wider rounded-full uppercase bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          {student.status}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -783,51 +954,62 @@ export function StudentsClient({
           </table>
         </div>
 
-        {/* ─── Mobile Responsive Card Roster (<768px) ─── */}
-        <div className="md:hidden divide-y divide-border/70">
+        {/* ─── Mobile Responsive Roster (<768px) ─── */}
+        <div className="md:hidden divide-y divide-border/60">
           {filteredStudents.map((student) => {
-            const initials = `${student.firstName[0] || ""}${student.lastName[0] || ""}`.toUpperCase();
+            const initials = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST";
+            const cleanClassLabel = student.classYearLabel.replace(/_/g, " ");
 
             return (
               <div
                 key={student.id}
                 onClick={() => setSelectedStudent(student)}
-                className="p-4 hover:bg-muted/30 transition-colors cursor-pointer flex flex-col gap-2.5"
+                className="p-3.5 hover:bg-muted/30 active:bg-muted/50 transition-colors cursor-pointer flex flex-col gap-2.5"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center text-sm font-bold shrink-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
                       {initials}
                     </div>
-                    <div>
-                      <p className="font-bold text-foreground text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-foreground text-xs truncate">
                         {student.fullName}
                       </p>
-                      <span className="font-mono text-[11px] font-bold text-muted-foreground">
+                      <div className="text-[11px] text-muted-foreground font-mono tabular-nums mt-0.5 truncate">
                         {student.registrationNumber}
-                      </span>
+                      </div>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 h-5 px-2 text-[10px] font-semibold tracking-wider rounded-full uppercase bg-emerald-50/90 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800 shrink-0">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                     {student.status}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <span className="font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
-                    {student.classYearLabel}
+                  <span className="h-5 px-2 inline-flex items-center rounded text-[10.5px] font-semibold text-foreground/90 bg-muted/70 border border-border/80">
+                    {cleanClassLabel}
                   </span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-muted-foreground">{student.courseName}</span>
+                  <span className="text-muted-foreground/60">•</span>
+                  <span className="text-foreground/90 font-medium truncate max-w-[180px]">{student.courseName}</span>
                 </div>
 
                 <div className="flex items-center justify-between pt-1 border-t border-border/50 text-xs">
-                  <span className="text-[11px] text-muted-foreground">
-                    {student.shiftLabel}
-                  </span>
-                  <span className="text-primary font-semibold flex items-center gap-0.5">
-                    View Dossier <ArrowRight className="w-3 h-3" />
-                  </span>
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Building2 className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                    <span className="text-[11px] truncate max-w-[150px]">{student.departmentName}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedStudent(student);
+                    }}
+                    className="inline-flex items-center gap-1 h-7 px-2.5 text-[11px] font-semibold rounded-md bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300/90 dark:border-emerald-800/90 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white transition-all cursor-pointer"
+                  >
+                    <span>View Profile</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             );
@@ -859,7 +1041,7 @@ export function StudentsClient({
         )}
 
         {/* Table Footer */}
-        <div className="px-5 py-3 border-t border-border/80 bg-muted/20 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-2">
+        <div className="px-4 py-3 border-t border-border/70 bg-muted/20 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-2">
           <span>
             Showing <strong className="text-foreground">{filteredStudents.length}</strong> of{" "}
             <strong className="text-foreground">{students.length}</strong> registered students
@@ -935,15 +1117,15 @@ export function StudentsClient({
                     selectedStudent.summary.attendanceStatus === "REGULAR"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : selectedStudent.summary.attendanceStatus === "CONDONATION"
-                      ? "bg-amber-50 text-amber-700 border-amber-200"
-                      : "bg-rose-50 text-rose-700 border-rose-200"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200"
                   )}
                 >
                   {selectedStudent.summary.attendanceStatus === "REGULAR"
                     ? "Eligible"
                     : selectedStudent.summary.attendanceStatus === "CONDONATION"
-                    ? "Condonation"
-                    : "Redo Sem"}
+                      ? "Condonation"
+                      : "Redo Sem"}
                 </span>
               </div>
 
@@ -962,8 +1144,8 @@ export function StudentsClient({
                     selectedStudent.summary.feeStatus === "PAID"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : selectedStudent.summary.feeStatus === "PARTIALLY_PAID"
-                      ? "bg-amber-50 text-amber-700 border-amber-200"
-                      : "bg-rose-50 text-rose-700 border-rose-200"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200"
                   )}
                 >
                   {selectedStudent.summary.feeStatus.replace("_", " ")}
@@ -1117,21 +1299,21 @@ export function StudentsClient({
           />
 
           <div className="flex min-h-full items-center justify-center p-3 sm:p-5">
-            <div className="relative w-full max-w-2xl rounded-2xl bg-card border border-border shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-card-foreground animate-in zoom-in-95 duration-200">
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-border/80 flex items-center justify-between bg-card shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+            <div className="relative w-full max-w-2xl rounded-2xl bg-card border border-border/80 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-card-foreground animate-in zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="px-6 py-4.5 border-b border-border/70 flex items-center justify-between bg-card shrink-0">
+                <div className="flex items-center gap-3.5">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-2xs">
                     <UserCheck className="w-5 h-5" />
                   </div>
                   <div>
                     <h3
                       id="add-student-modal-title"
-                      className="text-base font-bold text-foreground tracking-tight"
+                      className="text-base font-bold text-foreground tracking-tight leading-snug"
                     >
                       Institutional Student Registration
                     </h3>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Enroll and index a new student record into MUC academic register
                     </p>
                   </div>
@@ -1139,23 +1321,23 @@ export function StudentsClient({
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+                  className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 flex items-center justify-center transition-colors cursor-pointer"
                   aria-label="Close dialog"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {addFormSuccess ? (
-                <div className="py-14 px-6 text-center flex flex-col items-center justify-center gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center animate-bounce">
+                <div className="py-16 px-6 text-center flex flex-col items-center justify-center gap-3.5">
+                  <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center animate-bounce shadow-xs">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
                   <div>
                     <p className="text-base font-bold text-foreground">
                       Student Successfully Enrolled
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
                       Record created and indexed into the active MUC college register.
                     </p>
                   </div>
@@ -1173,120 +1355,93 @@ export function StudentsClient({
                   className="flex flex-col flex-1 overflow-hidden"
                 >
                   {/* Scrollable Form Body */}
-                  <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+                  <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4.5 scrollbar-thin">
                     {/* ── Section 1: Academic Placement ── */}
-                    <div className="rounded-xl border border-border/80 bg-muted/15 p-4 space-y-3.5">
-                      <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-4.5 space-y-4 shadow-2xs">
+                      <div className="flex items-center justify-between pb-2.5 border-b border-border/60">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-6.5 w-6.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
                             <GraduationCap className="w-3.5 h-3.5" />
                           </div>
-                          <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                          <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">
                             1. Academic Placement
                           </span>
                         </div>
                         {modalClassPreview && (
-                          <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                          <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-md">
                             {modalClassPreview}
                           </span>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Department */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            Department <span className="text-rose-500">*</span>
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 flex items-center justify-between">
+                            <span>Department <span className="text-rose-500 font-bold">*</span></span>
                           </label>
-                          <div className="relative">
-                            <select
-                              required
-                              value={newDeptId}
-                              onChange={(e) => {
-                                const dId = e.target.value;
-                                setNewDeptId(dId);
-                                const matchCourse = courses.find(
-                                  (c) => c.departmentId === dId
-                                );
-                                if (matchCourse) setNewCourseId(matchCourse.id);
-                              }}
-                              className="w-full appearance-none h-9 pl-3 pr-8 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
-                            >
-                              <option value="">Select Department</option>
-                              {departments.map((d) => (
-                                <option key={d.id} value={d.id}>
-                                  {d.name} ({d.code})
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          </div>
+                          <CustomSelect
+                            value={newDeptId}
+                            onChange={(val) => {
+                              setNewDeptId(val);
+                              const matchCourse = courses.find((c) => c.departmentId === val);
+                              if (matchCourse) setNewCourseId(matchCourse.id);
+                            }}
+                            placeholder="Select Department"
+                            options={departments.map((d) => ({
+                              value: d.id,
+                              label: d.name,
+                              sublabel: d.code,
+                            }))}
+                          />
                         </div>
 
-                        {/* Course */}
+                        {/* Course & Shift */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            Course & Shift <span className="text-rose-500">*</span>
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 flex items-center justify-between">
+                            <span>Course & Shift <span className="text-rose-500 font-bold">*</span></span>
                           </label>
-                          <div className="relative">
-                            <select
-                              required
-                              value={newCourseId}
-                              onChange={(e) => {
-                                const cId = e.target.value;
-                                setNewCourseId(cId);
-                                const found = courses.find((c) => c.id === cId);
-                                if (found && !newDeptId) {
-                                  setNewDeptId(found.departmentId);
-                                }
-                              }}
-                              className="w-full appearance-none h-9 pl-3 pr-8 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
-                            >
-                              <option value="">Select Course</option>
-                              {modalAvailableCourses.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.code} — {c.name} (
-                                  {c.shift === "SHIFT_I"
-                                    ? "Shift I · Aided"
-                                    : "Shift II · SF"}
-                                  )
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          </div>
+                          <CustomSelect
+                            value={newCourseId}
+                            onChange={(val) => {
+                              setNewCourseId(val);
+                              const found = courses.find((c) => c.id === val);
+                              if (found && !newDeptId) {
+                                setNewDeptId(found.departmentId);
+                              }
+                            }}
+                            placeholder="Select Course & Shift"
+                            options={modalAvailableCourses.map((c) => ({
+                              value: c.id,
+                              label: `${c.code} — ${c.name}`,
+                              badge: c.shift === "SHIFT_I" ? "Shift I · Aided" : "Shift II · SF",
+                              badgeVariant: c.shift === "SHIFT_I" ? "emerald" : "indigo",
+                            }))}
+                          />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {/* Semester */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            Semester <span className="text-rose-500">*</span>
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 flex items-center justify-between">
+                            <span>Semester <span className="text-rose-500 font-bold">*</span></span>
                           </label>
-                          <div className="relative">
-                            <select
-                              value={newSemester}
-                              onChange={(e) =>
-                                setNewSemester(Number(e.target.value))
-                              }
-                              className="w-full appearance-none h-9 pl-3 pr-8 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
-                            >
-                              {[1, 2, 3, 4, 5, 6].map((sem) => (
-                                <option key={sem} value={sem}>
-                                  Semester {sem} (Year{" "}
-                                  {sem <= 2 ? "1" : sem <= 4 ? "2" : "3"})
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          </div>
+                          <CustomSelect
+                            value={newSemester}
+                            onChange={(val) => setNewSemester(Number(val))}
+                            placeholder="Select Semester"
+                            options={[1, 2, 3, 4, 5, 6].map((sem) => ({
+                              value: sem,
+                              label: `Semester ${sem} (Year ${sem <= 2 ? "1" : sem <= 4 ? "2" : "3"})`,
+                            }))}
+                          />
                         </div>
 
                         {/* Registration Number */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            Registration No. <span className="text-rose-500">*</span>
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 flex items-center justify-between">
+                            <span>Registration No. <span className="text-rose-500 font-bold">*</span></span>
                           </label>
                           <input
                             type="text"
@@ -1296,13 +1451,13 @@ export function StudentsClient({
                               setNewRegNo(e.target.value.toUpperCase())
                             }
                             placeholder="e.g. 25UCA010"
-                            className="w-full h-9 px-3 text-xs font-mono uppercase bg-background border border-border/80 rounded-lg text-foreground placeholder:font-sans placeholder:normal-case placeholder:text-muted-foreground/50 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] font-mono uppercase bg-background border border-border/80 rounded-lg text-foreground placeholder:font-sans placeholder:normal-case placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all shadow-2xs"
                           />
                         </div>
 
                         {/* Admission Number */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 block">
                             Admission No.
                           </label>
                           <input
@@ -1310,28 +1465,28 @@ export function StudentsClient({
                             value={newAdmNo}
                             onChange={(e) => setNewAdmNo(e.target.value)}
                             placeholder="e.g. ADM-25-010"
-                            className="w-full h-9 px-3 text-xs bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all shadow-2xs"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* ── Section 2: Student Identity & Demographics ── */}
-                    <div className="rounded-xl border border-border/80 bg-muted/15 p-4 space-y-3.5">
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/60">
-                        <div className="h-6 w-6 rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-4.5 space-y-4 shadow-2xs">
+                      <div className="flex items-center gap-2.5 pb-2.5 border-b border-border/60">
+                        <div className="h-6.5 w-6.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
                           <UserCheck className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                        <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">
                           2. Student Demographics
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* First Name */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            First Name <span className="text-rose-500">*</span>
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 flex items-center justify-between">
+                            <span>First Name <span className="text-rose-500 font-bold">*</span></span>
                           </label>
                           <input
                             type="text"
@@ -1339,14 +1494,14 @@ export function StudentsClient({
                             value={newFirstName}
                             onChange={(e) => setNewFirstName(e.target.value)}
                             placeholder="e.g. Tariq"
-                            className="w-full h-9 px-3 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all shadow-2xs"
                           />
                         </div>
 
                         {/* Last Name */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                            Last Name <span className="text-rose-500">*</span>
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 flex items-center justify-between">
+                            <span>Last Name <span className="text-rose-500 font-bold">*</span></span>
                           </label>
                           <input
                             type="text"
@@ -1354,82 +1509,75 @@ export function StudentsClient({
                             value={newLastName}
                             onChange={(e) => setNewLastName(e.target.value)}
                             placeholder="e.g. Ahmed"
-                            className="w-full h-9 px-3 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all shadow-2xs"
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {/* Date of Birth */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 block">
                             Date of Birth
                           </label>
                           <input
                             type="date"
                             value={newDob}
                             onChange={(e) => setNewDob(e.target.value)}
-                            className="w-full h-9 px-3 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] font-medium bg-background border border-border/80 rounded-lg text-foreground hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all cursor-pointer shadow-2xs"
                           />
                         </div>
 
                         {/* Gender */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 block">
                             Gender
                           </label>
-                          <div className="relative">
-                            <select
-                              value={newGender}
-                              onChange={(e) => setNewGender(e.target.value)}
-                              className="w-full appearance-none h-9 pl-3 pr-8 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
-                            >
-                              <option value="Male">Male</option>
-                              <option value="Female">Female</option>
-                              <option value="Other">Other</option>
-                            </select>
-                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          </div>
+                          <CustomSelect
+                            value={newGender}
+                            onChange={(val) => setNewGender(val)}
+                            placeholder="Select Gender"
+                            options={[
+                              { value: "Male", label: "Male" },
+                              { value: "Female", label: "Female" },
+                              { value: "Other", label: "Other" },
+                            ]}
+                          />
                         </div>
 
                         {/* Blood Group */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 block">
                             Blood Group
                           </label>
-                          <div className="relative">
-                            <select
-                              value={newBloodGroup}
-                              onChange={(e) => setNewBloodGroup(e.target.value)}
-                              className="w-full appearance-none h-9 pl-3 pr-8 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all cursor-pointer"
-                            >
-                              {["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-", "Unknown"].map((bg) => (
-                                <option key={bg} value={bg}>
-                                  {bg}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          </div>
+                          <CustomSelect
+                            value={newBloodGroup}
+                            onChange={(val) => setNewBloodGroup(val)}
+                            placeholder="Select Blood Group"
+                            options={["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-", "Unknown"].map((bg) => ({
+                              value: bg,
+                              label: bg,
+                            }))}
+                          />
                         </div>
                       </div>
                     </div>
 
                     {/* ── Section 3: Contact & Guardian ── */}
-                    <div className="rounded-xl border border-border/80 bg-muted/15 p-4 space-y-3.5">
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/60">
-                        <div className="h-6 w-6 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <div className="rounded-xl border border-border/70 bg-muted/20 p-4.5 space-y-4 shadow-2xs">
+                      <div className="flex items-center gap-2.5 pb-2.5 border-b border-border/60">
+                        <div className="h-6.5 w-6.5 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
                           <Mail className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                        <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">
                           3. Contact & Guardian Records
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Student Email */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 block">
                             Student Email
                           </label>
                           <input
@@ -1437,13 +1585,13 @@ export function StudentsClient({
                             value={newEmail}
                             onChange={(e) => setNewEmail(e.target.value)}
                             placeholder="student@muc.edu"
-                            className="w-full h-9 px-3 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all shadow-2xs"
                           />
                         </div>
 
                         {/* Student Phone */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 block">
                             Student Phone
                           </label>
                           <input
@@ -1451,15 +1599,15 @@ export function StudentsClient({
                             value={newPhone}
                             onChange={(e) => setNewPhone(e.target.value)}
                             placeholder="9876543210"
-                            className="w-full h-9 px-3 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all shadow-2xs"
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Guardian Name */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 block">
                             Parent / Guardian Name
                           </label>
                           <input
@@ -1467,13 +1615,13 @@ export function StudentsClient({
                             value={newGuardianName}
                             onChange={(e) => setNewGuardianName(e.target.value)}
                             placeholder="e.g. Parent / Legal Guardian"
-                            className="w-full h-9 px-3 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all shadow-2xs"
                           />
                         </div>
 
                         {/* Guardian Phone */}
                         <div>
-                          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11.5px] font-semibold text-foreground/80 mb-1.5 block">
                             Guardian Contact Phone
                           </label>
                           <input
@@ -1481,7 +1629,7 @@ export function StudentsClient({
                             value={newGuardianPhone}
                             onChange={(e) => setNewGuardianPhone(e.target.value)}
                             placeholder="e.g. 9876543298"
-                            className="w-full h-9 px-3 text-xs font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all"
+                            className="w-full h-10 px-3.5 text-xs sm:text-[13px] font-medium bg-background border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/50 hover:border-border hover:bg-muted/10 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 focus:outline-none transition-all shadow-2xs"
                           />
                         </div>
                       </div>
@@ -1489,25 +1637,25 @@ export function StudentsClient({
                   </div>
 
                   {/* Sticky Footer */}
-                  <div className="shrink-0 px-6 py-3.5 border-t border-border/80 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="shrink-0 px-6 py-4 border-t border-border/70 bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                       <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <span>Record auto-synced with active academic roster</span>
                     </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
                       <button
                         type="button"
                         onClick={() => setIsAddModalOpen(false)}
-                        className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/80 border border-border/80 rounded-xl transition-colors cursor-pointer"
+                        className="h-10 px-4 text-xs font-semibold text-foreground/80 hover:text-foreground bg-background hover:bg-muted/70 border border-border/80 rounded-lg transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="flex items-center justify-center gap-2 px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-all cursor-pointer font-medium"
+                        className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm hover:shadow transition-all active:scale-[0.98] cursor-pointer inline-flex items-center justify-center gap-2"
                       >
-                        <UserCheck className="w-3.5 h-3.5" />
+                        <UserCheck className="w-4 h-4 shrink-0" />
                         <span>Register Student</span>
                       </button>
                     </div>

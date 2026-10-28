@@ -46,13 +46,13 @@ export function Sidebar() {
       </div>
 
       {/* ── Navigation ───────────────────────────────────── */}
-      <nav aria-label="Main Navigation" className="flex-1 overflow-y-auto sidebar-scroll px-3 py-4">
+      <nav aria-label="Main Navigation" className="flex-1 overflow-y-auto sidebar-scroll px-3 py-3">
         {navigationGroups.map((group) => (
-          <div key={group.label} className="mb-7 last:mb-0">
-            <p className="px-3 mb-2 text-[10.5px] font-bold tracking-wider uppercase text-emerald-100/70">
+          <div key={group.label} className="mb-5 last:mb-0">
+            <p className="px-3 mb-1.5 text-[10px] font-bold tracking-wider uppercase text-emerald-100/75">
               {group.label}
             </p>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {group.items.map((item) => {
                 const isActive =
                   pathname === item.href ||
@@ -66,22 +66,22 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "group relative flex items-center gap-3.5 px-3 py-2 text-sm rounded-xl transition-all duration-150",
+                      "group relative flex items-center gap-3 px-3 py-2 text-[13px] rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
                       isActive
-                        ? "bg-white text-[#047857] font-semibold shadow-md"
-                        : "text-emerald-50/85 hover:text-white hover:bg-white/15"
+                        ? "bg-white text-[#047857] font-semibold shadow-xs"
+                        : "text-emerald-50/90 hover:text-white hover:bg-white/12"
                     )}
                   >
                     {isActive && (
                       <motion.div
                         layoutId="sidebar-active-indicator"
                         className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 rounded-full bg-[#047857]"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
                       />
                     )}
                     <item.icon
                       className={cn(
-                        "h-[18px] w-[18px] shrink-0 transition-colors",
+                        "h-[17px] w-[17px] shrink-0 transition-colors",
                         isActive
                           ? "text-[#047857]"
                           : "text-emerald-100/75 group-hover:text-white"
@@ -98,18 +98,16 @@ export function Sidebar() {
       </nav>
 
       {/* ── Footer ───────────────────────────────────────── */}
-      <div className="border-t border-white/15 px-5 py-4 bg-black/10">
+      <div className="border-t border-white/15 px-4 py-3 bg-black/10">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 shrink-0 rounded-full bg-white text-[#047857] font-bold flex items-center justify-center shadow-sm">
-            <span className="text-[11px]">
-              {user ? `${user.firstName[0]}${user.lastName[0]}` : "AD"}
-            </span>
+          <div className="h-8 w-8 shrink-0 rounded-full bg-white text-[#047857] font-bold flex items-center justify-center shadow-xs text-xs">
+            {user ? `${user.firstName[0]}${user.lastName[0]}` : "AD"}
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-white truncate leading-tight">
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-white truncate leading-tight">
               {user ? `${user.firstName} ${user.lastName}` : (isSuperAdmin ? "Super Admin User" : "Master Admin User")}
             </p>
-            <p className="text-[11px] text-emerald-100/80 truncate leading-tight">
+            <p className="text-[11px] text-emerald-100/80 truncate leading-tight mt-0.5">
               {isSuperAdmin ? "Super Admin" : "Master Admin"}
             </p>
           </div>

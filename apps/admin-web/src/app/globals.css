@@ -77,13 +77,14 @@
   /* Destructive */
   --destructive: oklch(0.55 0.22 27);
 
-  /* Borders & Inputs — subtle and delicate */
-  --border: oklch(0.915 0.007 150);
-  --input: oklch(0.915 0.007 150);
+  /* Borders & Inputs — refined, subtle, non-intrusive */
+  --border: oklch(0.922 0.006 150);
+  --border-subtle: oklch(0.938 0.005 150);
+  --input: oklch(0.922 0.006 150);
   --ring: oklch(0.52 0.16 160);
 
-  /* Radius */
-  --radius: 0.625rem;
+  /* Radius — restrained enterprise standard */
+  --radius: 0.75rem;
 
   /* Sidebar geometry */
   --sidebar-width: 16.5rem;
@@ -106,6 +107,7 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 @layer base {
@@ -120,9 +122,9 @@ body {
 /* ─── TYPOGRAPHY SCALE ─────────────────────────────────────── */
 
 .text-page-title {
-  font-size: 1.5rem;
-  line-height: 2rem;
-  font-weight: 600;
+  font-size: 1.375rem;
+  line-height: 1.875rem;
+  font-weight: 700;
   letter-spacing: -0.025em;
   color: var(--foreground);
 }
@@ -131,6 +133,7 @@ body {
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--foreground);
 }
 
@@ -138,6 +141,16 @@ body {
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.text-kpi-value {
+  font-size: 1.75rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
   color: var(--foreground);
 }
 
@@ -149,15 +162,15 @@ body {
 
 .text-caption {
   font-size: 0.75rem;
-  line-height: 1rem;
+  line-height: 1.05rem;
   color: var(--muted-foreground);
 }
 
 .text-label {
   font-size: 0.6875rem;
-  line-height: 1rem;
-  font-weight: 500;
-  letter-spacing: 0.05em;
+  line-height: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
@@ -165,8 +178,8 @@ body {
 /* ─── SCROLLBAR ────────────────────────────────────────────── */
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -175,7 +188,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: oklch(0.82 0.005 250);
-  border-radius: 10px;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -207,7 +220,7 @@ body {
   border-radius: 9999px;
 }
 
-/* ─── UTILITY OVERRIDES ────────────────────────────────────── */
+/* ─── UTILITY OVERRIDES & SHARED PATTERNS ──────────────────── */
 
 /* Tailwind v4 CSS-var opacity workarounds for custom colors */
 .bg-primary-subtle {
@@ -220,4 +233,109 @@ body {
 
 .border-primary-subtle {
   border-color: oklch(0.88 0.05 160);
+}
+
+/* Modern Card Pattern */
+.erp-card {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.erp-card-interactive {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.erp-card-interactive:hover {
+  border-color: oklch(0.86 0.03 160);
+  box-shadow: 0 2px 8px -1px rgb(0 0 0 / 0.06);
+}
+
+/* Tabular numerals for data accuracy */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessible focus ring */
+.focus-ring {
+  outline: none;
+  transition: box-shadow 140ms ease;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+}
+
+/* Respect motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── ENTERPRISE CARD-ROW TABLE PATTERN ─────────────────────── */
+.erp-card-table {
+  border-collapse: separate !important;
+  border-spacing: 0 10px !important;
+  width: 100%;
+}
+
+.erp-card-table thead tr th {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border: none !important;
+  background: transparent !important;
+}
+
+.erp-card-table tbody tr {
+  background: transparent !important;
+}
+
+.erp-card-table tbody tr td {
+  background-color: var(--card) !important;
+  border-top: 1px solid var(--border) !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.erp-card-table tbody tr td:first-child {
+  border-left: 1px solid var(--border) !important;
+  border-top-left-radius: 0.875rem !important;
+  border-bottom-left-radius: 0.875rem !important;
+}
+
+.erp-card-table tbody tr td:last-child {
+  border-right: 1px solid var(--border) !important;
+  border-top-right-radius: 0.875rem !important;
+  border-bottom-right-radius: 0.875rem !important;
+}
+
+.erp-card-table tbody tr:hover td {
+  background-color: oklch(0.982 0.02 160 / 0.75) !important;
+  border-color: oklch(0.52 0.16 160 / 0.45) !important;
+}
+
+.dark .erp-card-table tbody tr td {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.dark .erp-card-table tbody tr:hover td {
+  background-color: oklch(0.24 0.03 160 / 0.45) !important;
+  border-color: oklch(0.52 0.16 160 / 0.45) !important;
 }

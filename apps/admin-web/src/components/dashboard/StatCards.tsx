@@ -48,14 +48,14 @@ export function StatCards({ kpis }: StatCardsProps = {}) {
                 : Minus;
 
           const CardContent = (
-            <div className="bg-card rounded-2xl border border-border p-4 lg:p-5 flex flex-col justify-between shadow-xs hover:shadow-sm hover:border-border/80 transition-all h-full">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[13.5px] font-medium text-muted-foreground/90">
+            <div className="bg-card rounded-xl border border-border/80 p-4 lg:p-4.5 flex flex-col justify-between shadow-xs hover:border-primary/30 hover:shadow-sm transition-all duration-150 h-full">
+              <div className="flex items-center justify-between mb-3.5">
+                <span className="text-[13px] font-semibold text-muted-foreground">
                   {kpi.label}
                 </span>
                 <div
                   className={cn(
-                    "flex h-11 w-11 items-center justify-center rounded-[14px] border",
+                    "flex h-10 w-10 items-center justify-center rounded-xl border shrink-0 shadow-2xs",
                     config.bg,
                     config.text
                   )}
@@ -65,7 +65,7 @@ export function StatCards({ kpis }: StatCardsProps = {}) {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <p className="text-3xl font-bold tracking-tight text-foreground leading-none">
+                <p className="text-2xl lg:text-[1.75rem] font-bold tracking-tight text-foreground leading-none num-tabular">
                   {kpi.value}
                 </p>
 
@@ -74,7 +74,7 @@ export function StatCards({ kpis }: StatCardsProps = {}) {
                     <TrendIcon
                       className={cn(
                         "h-3.5 w-3.5 shrink-0",
-                        kpi.trend === "up" ? "text-emerald-600" : "text-rose-600"
+                        kpi.trend === "up" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                       )}
                     />
                   )}
@@ -82,9 +82,9 @@ export function StatCards({ kpis }: StatCardsProps = {}) {
                     className={cn(
                       "text-[11px] font-medium truncate",
                       kpi.trend === "up"
-                        ? "text-emerald-700"
+                        ? "text-emerald-700 dark:text-emerald-400"
                         : kpi.trend === "attention"
-                          ? "text-rose-600 font-semibold"
+                          ? "text-rose-600 dark:text-rose-400 font-semibold"
                           : "text-muted-foreground"
                     )}
                     title={kpi.subtitle}
@@ -98,7 +98,7 @@ export function StatCards({ kpis }: StatCardsProps = {}) {
 
           if (kpi.targetRoute && kpi.targetRoute !== "#") {
             return (
-              <Link key={kpi.id} href={kpi.targetRoute} className="block transition-transform hover:-translate-y-0.5">
+              <Link key={kpi.id} href={kpi.targetRoute} className="block transition-transform hover:-translate-y-0.5 focus-ring rounded-xl">
                 {CardContent}
               </Link>
             );
